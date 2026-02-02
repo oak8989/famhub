@@ -1,24 +1,40 @@
 version: '3.8'
 
 services:
+  # =============================================================================
+  # Family Hub Application
+  # =============================================================================
   family-hub:
-    build: .
+    image: ghcr.io/yourusername/family-hub:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: family-hub
     restart: unless-stopped
     ports:
-      - "8001:8001"
+      - "${PORT:-8001}:8001"
     environment:
       - MONGO_URL=mongodb://mongo:27017
-      - DB_NAME=family_hub
-      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
-      - CORS_ORIGINS=*
+      - DB_NAME=${DB_NAME:-family_hub}
+      - JWT_SECRET=${JWT_SECRET:-change-this-secret-in-production}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
     volumes:
       - photos-data:/app/backend/photos
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     networks:
       - family-hub-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
+  # =============================================================================
+  # MongoDB Database
+  # =============================================================================
   mongo:
     image: mongo:7
     container_name: family-hub-mongo
@@ -27,11 +43,26 @@ services:
       - mongo-data:/data/db
     networks:
       - family-hub-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
+# =============================================================================
+# Volumes for Data Persistence
+# =============================================================================
 volumes:
   mongo-data:
+    name: family-hub-mongo-data
   photos-data:
+    name: family-hub-photos
 
+# =============================================================================
+# Network
+# =============================================================================
 networks:
   family-hub-network:
+    name: family-hub-network
     driver: bridge

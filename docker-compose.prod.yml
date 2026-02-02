@@ -1,0 +1,102 @@
+# =============================================================================
+# Production Docker Compose with Traefik Reverse Proxy
+# Use this for production deployments with HTTPS
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # =============================================================================
+  # Traefik Reverse Proxy (handles HTTPS/SSL)
+  # =============================================================================
+  traefik:
+    image: traefik:v3.0
+    container_name: family-hub-traefik
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      # Redirect HTTP to HTTPS
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt-data:/letsencrypt
+    networks:
+      - family-hub-network
+
+  # =============================================================================
+  # Family Hub Application
+  # =============================================================================
+  family-hub:
+    image: ghcr.io/yourusername/family-hub:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: family-hub
+    restart: unless-stopped
+    environment:
+      - MONGO_URL=mongodb://mongo:27017
+      - DB_NAME=${DB_NAME:-family_hub}
+      - JWT_SECRET=${JWT_SECRET}
+      - CORS_ORIGINS=https://${DOMAIN}
+    volumes:
+      - photos-data:/app/backend/photos
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - family-hub-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.familyhub.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.familyhub.entrypoints=websecure"
+      - "traefik.http.routers.familyhub.tls.certresolver=letsencrypt"
+      - "traefik.http.services.familyhub.loadbalancer.server.port=8001"
+
+  # =============================================================================
+  # MongoDB Database
+  # =============================================================================
+  mongo:
+    image: mongo:7
+    container_name: family-hub-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - family-hub-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  mongo-data:
+    name: family-hub-mongo-data
+  photos-data:
+    name: family-hub-photos
+  letsencrypt-data:
+    name: family-hub-letsencrypt
+
+# =============================================================================
+# Network
+# =============================================================================
+networks:
+  family-hub-network:
+    name: family-hub-network
+    driver: bridge
