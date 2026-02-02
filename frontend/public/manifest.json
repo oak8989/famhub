@@ -1,0 +1,23 @@
+{
+  "short_name": "Family Hub",
+  "name": "Family Hub - Family Organization App",
+  "description": "Keep your family organized with shared calendars, shopping lists, tasks, notes, meal planning, and more.",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23E07A5F'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='50' fill='white'>🏠</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23E07A5F'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='50' fill='white'>🏠</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#E07A5F",
+  "background_color": "#F4F1DE",
+  "orientation": "any",
+  "categories": ["productivity", "lifestyle", "family"]
+}
