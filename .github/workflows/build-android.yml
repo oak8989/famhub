@@ -1,0 +1,106 @@
+# =============================================================================
+# Build Android APK using GitHub Actions
+# =============================================================================
+
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          yarn install --frozen-lockfile
+
+      - name: Build web app
+        run: |
+          cd frontend
+          REACT_APP_BACKEND_URL="" yarn build
+
+      - name: Sync Capacitor
+        run: |
+          cd frontend
+          npx cap sync android
+
+      - name: Make gradlew executable
+        run: chmod +x frontend/android/gradlew
+
+      - name: Build Debug APK
+        run: |
+          cd frontend/android
+          ./gradlew assembleDebug
+
+      - name: Build Release APK
+        run: |
+          cd frontend/android
+          ./gradlew assembleRelease
+
+      - name: Sign Release APK
+        if: github.event_name != 'pull_request'
+        uses: r0adkll/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDirectory: frontend/android/app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
+          alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "34.0.0"
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: family-hub-debug
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: family-hub-release
+          path: |
+            frontend/android/app/build/outputs/apk/release/app-release-unsigned.apk
+            ${{ steps.sign_app.outputs.signedReleaseFile }}
+
+      - name: Upload APK to Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            frontend/android/app/build/outputs/apk/debug/app-debug.apk
+            ${{ steps.sign_app.outputs.signedReleaseFile }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

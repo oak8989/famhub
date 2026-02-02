@@ -1,33 +1,59 @@
-*
-!backend/
-!frontend/
-!Dockerfile
-!docker-compose.yml
-!docker-compose.prod.yml
-!.env.example
-!README.md
-!LICENSE
-!cliff.toml
-!.github/
+# =============================================================================
+# Family Hub - Git Ignore
+# =============================================================================
 
-backend/__pycache__/
-backend/*.pyc
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Build outputs
+frontend/build/
+dist/
+
+# Environment files (keep example)
+.env
+.env.local
+.env.*.local
 backend/.env
+frontend/.env
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Testing
+coverage/
+.pytest_cache/
+test_reports/
+
+# Photos (keep placeholder)
 backend/photos/*
 !backend/photos/.gitkeep
 
-frontend/node_modules/
-frontend/build/
-frontend/.env
-frontend/node_modules/.cache/default-development/3.pack
--e 
-# Environment files
-*.env
-*.env.*
-frontend/node_modules/.cache/default-development/5.pack
+# Misc
+*.bak
+*.tmp
+.emergent/
+memory/
+
+# Android build outputs
+frontend/android/app/build/
+frontend/android/.gradle/
+*.apk
+*.aab
 frontend/node_modules/.cache/default-development/6.pack
 frontend/node_modules/.cache/default-development/0.pack
--e 
-# Environment files
-*.env
-*.env.*

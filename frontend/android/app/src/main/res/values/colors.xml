@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Family Hub Brand Colors -->
+    <color name="colorPrimary">#E07A5F</color>
+    <color name="colorPrimaryDark">#D0694E</color>
+    <color name="colorAccent">#81B29A</color>
+    
+    <!-- Additional colors -->
+    <color name="cream">#F4F1DE</color>
+    <color name="warmWhite">#FEFAE0</color>
+    <color name="navy">#3D405B</color>
+    <color name="sunny">#F2CC8F</color>
+    <color name="sage">#81B29A</color>
+    <color name="terracotta">#E07A5F</color>
+</resources>
