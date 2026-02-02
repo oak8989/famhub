@@ -1,0 +1,123 @@
+{
+  "identity": {
+    "name": "E1",
+    "role": "Anti-AI Designer",
+    "mission": "Create a warm, cozy, family-centric digital home that feels like a scrapbook, not a spreadsheet."
+  },
+  "theme": {
+    "name": "Cozy Hearth",
+    "mode": "light",
+    "emotional_archetype": "Organic & Earthy",
+    "vibe": "Grounded, matte, physical, inviting, safe."
+  },
+  "typography": {
+    "strategy": "Soft Utility",
+    "headings": {
+      "font_family": "Nunito, sans-serif",
+      "weight": "700",
+      "tracking": "tight",
+      "usage": "All section headers, page titles, and major calls to action. The rounded terminals evoke friendliness."
+    },
+    "body": {
+      "font_family": "DM Sans, sans-serif",
+      "weight": "400",
+      "usage": "General text, lists, inputs. High legibility but with a humanist touch."
+    },
+    "accents": {
+      "font_family": "Caveat, cursive",
+      "usage": "Personal notes, 'handwritten' annotations, empty states. Adds the human touch."
+    }
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "name": "Terracotta Warmth",
+        "hex": "#E07A5F",
+        "tailwind": "bg-[#E07A5F] text-white hover:bg-[#D0694E]"
+      },
+      "secondary": {
+        "name": "Sage Comfort",
+        "hex": "#81B29A",
+        "tailwind": "bg-[#81B29A] text-white"
+      },
+      "background": {
+        "name": "Cream Paper",
+        "hex": "#F4F1DE",
+        "tailwind": "bg-[#F4F1DE]"
+      },
+      "surface": {
+        "name": "Warm White",
+        "hex": "#FEFAE0",
+        "tailwind": "bg-[#FEFAE0]"
+      },
+      "text": {
+        "primary": "#3D405B",
+        "secondary": "#6D6875"
+      },
+      "accent": {
+        "name": "Sunny Yolk",
+        "hex": "#F2CC8F",
+        "tailwind": "bg-[#F2CC8F] text-[#3D405B]"
+      }
+    },
+    "rules": [
+      "Never use pure black (#000000). Use Deep Navy (#3D405B) for text.",
+      "Never use pure white (#FFFFFF) for backgrounds. Use Cream (#F4F1DE) or Warm White (#FEFAE0).",
+      "Gradients should be subtle and warm, like a sunset, not 'tech' neon."
+    ]
+  },
+  "layout": {
+    "grid_system": "Bento Grid (Mode A)",
+    "spacing": "Generous. Use p-6 or p-8 for cards. Gap-6 for grids.",
+    "border_radius": "rounded-2xl or rounded-3xl. No sharp corners.",
+    "container_style": "Soft Card: bg-[#FEFAE0] shadow-[4px_4px_0px_0px_rgba(61,64,91,0.1)] border-2 border-[#F2CC8F]"
+  },
+  "components": {
+    "buttons": {
+      "primary": "rounded-full bg-[#E07A5F] text-white hover:translate-y-[-2px] transition-all shadow-md hover:shadow-lg font-bold px-8 py-3",
+      "secondary": "rounded-full bg-[#F2CC8F] text-[#3D405B] hover:bg-[#E5BE7E] font-bold px-6 py-2",
+      "ghost": "text-[#E07A5F] hover:bg-[#E07A5F]/10 rounded-xl"
+    },
+    "cards": {
+      "style": "bg-[#FEFAE0] rounded-3xl border border-[#F2CC8F]/50 shadow-sm hover:shadow-md transition-all duration-300",
+      "padding": "p-6 md:p-8"
+    },
+    "inputs": {
+      "style": "bg-white/50 border-2 border-[#81B29A]/30 focus:border-[#81B29A] rounded-xl px-4 py-3 text-[#3D405B] placeholder:text-[#3D405B]/40"
+    },
+    "navigation": {
+      "style": "Floating dock or sidebar with rounded tabs. Active state: bg-[#E07A5F] text-white rounded-xl."
+    }
+  },
+  "visual_enhancers": {
+    "textures": "Use a subtle 'paper grain' noise overlay on the main background to make it feel tactile.",
+    "illustrations": "Use flat, organic illustrations for empty states (families, food, plants).",
+    "micro_interactions": "Buttons should have a 'squishy' feel (scale 0.95 on click).",
+    "shadows": "Colored shadows! shadow-[0_10px_40px_-10px_rgba(224,122,95,0.3)]"
+  },
+  "image_urls": {
+    "note": "Image selector tool failed. Use these placeholders or reliable sources.",
+    "hero_family": "https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&w=2070&auto=format&fit=crop",
+    "kitchen_pantry": "https://images.unsplash.com/photo-1606787366850-de6330128bfc?q=80&w=2070&auto=format&fit=crop",
+    "fresh_vegetables": "https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?q=80&w=2069&auto=format&fit=crop",
+    "empty_state_generic": "https://placehold.co/600x400/F4F1DE/E07A5F?text=Family+Moment",
+    "avatar_placeholder": "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
+  },
+  "instructions_to_main_agent": [
+    "1. INSTALL FONTS: Add '@fontsource/nunito', '@fontsource/dm-sans', and '@fontsource/caveat' to package.json immediately.",
+    "2. TAILWIND CONFIG: Update tailwind.config.js with the 'colors' object defined above. Extend the theme, don't overwrite.",
+    "3. SHADCN OVERRIDE: Go into /components/ui and update button.jsx, card.jsx, input.jsx to match the 'rounded-2xl' and 'border-2' aesthetic. Remove the default 'ring-offset' focus styles and replace with a softer border color change.",
+    "4. LAYOUT: For the Dashboard, use the 'Bento Grid' strategy. Create a 'GridContainer' component that handles the responsive logic.",
+    "5. AUTH PAGE: Make it look like a welcoming home entrance. No cold login forms. Use the 'hero_family' image as a side cover.",
+    "6. PANTRY: Use the 'kitchen_pantry' image as a header background with a gradient overlay.",
+    "7. DATA-TESTID: Ensure every interactive element has a data-testid attribute (e.g., 'login-btn', 'pantry-item-0')."
+  ],
+  "universal_guidelines": [
+    "Avoid 'AI Slop': No generic gradients, no 'Inter' font everywhere.",
+    "Dark colors look good when used independently without gradients.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur) for overlays.",
+    "Every interaction needs micro-animations.",
+    "Use 2-3x more spacing than feels comfortable."
+  ]
+}
