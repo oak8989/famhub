@@ -718,7 +718,11 @@ async def get_meal_suggestions(user: dict = Depends(get_current_user)):
 
 @api_router.get("/")
 async def root():
-    return {"message": "Family Hub API", "status": "running"}
+    return {"message": "Family Hub API", "status": "running", "version": "1.0.0"}
+
+@api_router.get("/health")
+async def health_check():
+    return {"status": "healthy"}
 
 # Include router and configure app
 app.include_router(api_router)
@@ -733,6 +737,24 @@ app.add_middleware(
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# Serve static frontend files in production (Docker)
+if FRONTEND_BUILD_DIR.exists():
+    app.mount("/static", StaticFiles(directory=FRONTEND_BUILD_DIR / "static"), name="static")
+    
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        # Don't serve frontend for API routes
+        if full_path.startswith("api"):
+            raise HTTPException(status_code=404, detail="Not found")
+        
+        # Try to serve the requested file
+        file_path = FRONTEND_BUILD_DIR / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        
+        # Fall back to index.html for SPA routing
+        return FileResponse(FRONTEND_BUILD_DIR / "index.html")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
