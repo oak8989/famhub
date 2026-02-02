@@ -11,8 +11,8 @@ FROM node:18-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Install dependencies first (better caching)
-COPY frontend/package.json frontend/yarn.lock ./
-RUN yarn install --frozen-lockfile --network-timeout 100000
+COPY frontend/package.json frontend/yarn.lock* ./
+RUN yarn install --network-timeout 100000
 
 # Copy frontend source
 COPY frontend/ ./
