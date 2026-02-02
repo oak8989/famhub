@@ -17,9 +17,9 @@ Build a family app with: shared calendar, shopping list, task list, shared notes
 - **Fonts**: Nunito (headings), DM Sans (body), Caveat (accents)
 - **Deployment**: Docker + Docker Compose
 
-## What's Been Implemented (Feb 2, 2026)
+## What's Been Implemented
 
-### Core Features
+### Core Features (Feb 2, 2026)
 1. **Authentication** - JWT login/register + Family PIN access
 2. **Dashboard** - Bento grid with quick stats and module access
 3. **Calendar** - Create, edit, delete events with color coding
@@ -36,13 +36,24 @@ Build a family app with: shared calendar, shopping list, task list, shared notes
 14. **Pantry Tracker** - Barcode scanner, expiry tracking
 15. **Meal Suggestions** - Rule-based matching recipes to pantry
 
-### Self-Hosting Features
+### Self-Hosting & DevOps (Dec 2025)
 - **Dockerfile** - Multi-stage build for production
 - **docker-compose.yml** - Full stack with MongoDB
+- **docker-compose.prod.yml** - Production deployment with Traefik HTTPS
 - **Self-Hosted Server Config** - Mobile/web can connect to custom server
 - **PWA Support** - Add to Home Screen on mobile
 - **Health Check Endpoint** - For container orchestration
 - **Static File Serving** - Backend serves frontend in production
+- **GitHub Actions CI/CD**:
+  - `docker-publish.yml` - Auto-publish to GHCR on push
+  - `release.yml` - Create releases on tag
+  - `build-android.yml` - Build Android APK
+- **Android APK Scaffolding** - Capacitor integration ready
+
+### Configuration Complete (Dec 2025)
+- GitHub username set to `oakguy93` across all repository files
+- Docker image publishes to `ghcr.io/oakguy93/family-hub`
+- README badges and links configured correctly
 
 ### Technical Implementation
 - Full CRUD APIs for all modules
