@@ -11,6 +11,9 @@
 # production
 /build
 
+# Emergent platform (local development only)
+/plugins
+
 # misc
 .DS_Store
 .env.local
