@@ -163,6 +163,7 @@ const PantryPage = () => {
       toast.error('Failed to start scanner. Please check camera permissions.');
       setScannerOpen(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const stopScanner = useCallback(() => {
