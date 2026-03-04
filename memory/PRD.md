@@ -9,85 +9,118 @@ Build a family app with: shared calendar, shopping list, task list, shared notes
 - Local server storage for photos
 - Warm & cozy design with earth tones
 - Both PIN code and individual JWT authentication
+- SMTP email for invitations
+- Google Calendar sync (Emergent-managed Google Auth)
+- Full admin customization (modules, permissions, themes)
 
 ## Architecture
-- **Frontend**: React with Tailwind CSS, Shadcn UI components
+- **Frontend**: React with Tailwind CSS, Shadcn UI, Recharts
 - **Backend**: FastAPI with MongoDB
 - **Design**: Warm earth tones (Terracotta, Sage, Cream, Sunny)
 - **Fonts**: Nunito (headings), DM Sans (body), Caveat (accents)
 - **Deployment**: Docker + Docker Compose
+- **CI/CD**: GitHub Actions
 
 ## What's Been Implemented
 
-### Core Features (Feb 2, 2026)
-1. **Authentication** - JWT login/register + Family PIN access
+### Core Features (Complete)
+1. **Authentication** - JWT login/register + Family PIN + Individual User PIN
 2. **Dashboard** - Bento grid with quick stats and module access
-3. **Calendar** - Create, edit, delete events with color coding
+3. **Calendar** - Create, edit, delete events with color coding + Google Calendar sync
 4. **Shopping List** - Categorized items with check/uncheck
-5. **Tasks** - Priority levels, assignment, due dates
+5. **Tasks** - Priority levels, **assignable to family members**, due dates
 6. **Notes** - Color-coded sticky notes
-7. **Messages** - Family chat with real-time polling
-8. **Budget** - Income/expense tracking with summary
-9. **Meal Planner** - Weekly view, drag meals to days
-10. **Recipe Box** - Full CRUD with ingredients/instructions
-11. **Grocery List** - Quick simplified shopping list
-12. **Contacts** - Address book with phone/email/address
-13. **Photo Gallery** - Local storage, upload, view, delete
-14. **Pantry Tracker** - Barcode scanner, expiry tracking
-15. **Meal Suggestions** - Rule-based matching recipes to pantry
+7. **Budget** - Income/expense tracking with **Recharts visualization** (pie charts, bar charts, area charts)
+8. **Meal Planner** - Weekly view, drag meals to days
+9. **Recipe Box** - Full CRUD with ingredients/instructions
+10. **Grocery List** - Quick simplified shopping list
+11. **Contacts** - Address book with phone/email/address
+12. **Pantry Tracker** - Barcode scanner, expiry tracking
+13. **Meal Suggestions** - Rule-based matching recipes to pantry
+14. **Chores & Rewards** - **Gamified chore chart** with points, leaderboard, and claimable rewards
 
-### Self-Hosting & DevOps (Dec 2025)
+### Admin Features (New - Dec 2025)
+- **Settings Page** with tabs for Family, Modules, Integrations, Server
+- **Add User by Email** - Send email invitations via SMTP
+- **User Roles** - Owner, Parent, Family Member, Child with different permissions
+- **Auto-generated PINs** - Family PIN (6 digits) + User PIN (4 digits)
+- **Module Enable/Disable** - Admins can hide modules from certain roles
+- **Role-based Visibility** - Control which roles can see which modules
+- **Family Name Changeable** - Admins can update family name
+- **Google Calendar Sync** - Connect and sync events to Google Calendar
+
+### Removed Features
+- Photo Gallery (removed per user request)
+- Messages (removed per user request)
+
+### Self-Hosting & DevOps
 - **Dockerfile** - Multi-stage build for production
 - **docker-compose.yml** - Full stack with MongoDB
 - **docker-compose.prod.yml** - Production deployment with Traefik HTTPS
 - **Self-Hosted Server Config** - Mobile/web can connect to custom server
 - **PWA Support** - Add to Home Screen on mobile
-- **Health Check Endpoint** - For container orchestration
-- **Static File Serving** - Backend serves frontend in production
-- **GitHub Actions CI/CD**:
-  - `docker-publish.yml` - Auto-publish to GHCR on push
-  - `release.yml` - Create releases on tag
-  - `build-android.yml` - Build Android APK
-- **Android APK Scaffolding** - Capacitor integration ready
+- **GitHub Actions CI/CD** - Docker publish, releases
 
-### Configuration Complete (Dec 2025)
-- GitHub username set to `oak8989` across all repository files
-- Docker image publishes to `ghcr.io/oak8989/family-hub`
-- README badges and links configured correctly
+## Configuration Required
 
-### Technical Implementation
-- Full CRUD APIs for all modules
-- MongoDB collections for all data
-- JWT authentication with bcrypt password hashing
-- File upload for photos
-- @zxing/library for barcode scanning
-- Responsive mobile-first design
-- PWA manifest for mobile install
-
-## Deployment Instructions
-
-### Docker Deployment
-```bash
-# Clone repository
-git clone <repo-url>
-cd family-hub
-
-# Configure environment
-cp .env.example .env
-# Edit JWT_SECRET in .env
-
-# Start services
-docker-compose up -d
-
-# Access at http://localhost:8001
+### SMTP Email (for invitations)
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_FROM=Family Hub <noreply@familyhub.local>
 ```
 
-### Mobile App Setup
-1. Open app URL in mobile browser
-2. Tap "Self-Hosted Server" on login screen
-3. Enter your server URL
-4. Tap "Test Connection" to verify
-5. Save and login with PIN or account
+### Google Calendar (optional)
+```env
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=https://your-domain.com/api/calendar/google/callback
+```
+
+## User Roles & Permissions
+
+| Role | Level | Manage Family | Manage Users | Manage Settings |
+|------|-------|---------------|--------------|-----------------|
+| Owner | 4 | ✅ | ✅ | ✅ |
+| Parent | 3 | ❌ | ✅ | ✅ |
+| Family Member | 2 | ❌ | ❌ | ❌ |
+| Child | 1 | ❌ | ❌ | ❌ |
+
+## API Endpoints
+
+### Auth
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login with email/password
+- `POST /api/auth/pin-login` - Login with family PIN
+- `POST /api/auth/user-pin-login` - Login with user PIN
+
+### Family Management
+- `POST /api/family/create` - Create family (auto-generates PIN)
+- `PUT /api/family` - Update family name
+- `POST /api/family/regenerate-pin` - Generate new family PIN
+- `POST /api/family/invite` - Invite member by email
+- `PUT /api/family/members/{id}/role` - Change member role
+- `DELETE /api/family/members/{id}` - Remove member
+
+### Settings
+- `GET /api/settings` - Get family settings
+- `PUT /api/settings` - Update modules/permissions/theme
+
+### Chores & Rewards
+- `GET /api/chores` - List chores
+- `POST /api/chores` - Create chore
+- `POST /api/chores/{id}/complete` - Mark complete (awards points)
+- `GET /api/rewards` - List rewards
+- `POST /api/rewards/claim` - Claim reward (spends points)
+- `GET /api/leaderboard` - Family points leaderboard
+
+### Google Calendar
+- `GET /api/calendar/google/auth` - Get OAuth URL
+- `GET /api/calendar/google/callback` - OAuth callback
+- `POST /api/calendar/google/sync` - Sync events to Google
+- `DELETE /api/calendar/google/disconnect` - Disconnect Google
 
 ## Backlog
 
@@ -95,19 +128,16 @@ docker-compose up -d
 - None remaining
 
 ### P1 (Important)
-- Budget visualization charts (Recharts)
-- Real-time WebSocket for messages
+- Real-time WebSocket for updates
 - Push notifications
 - Data export/backup
 
 ### P2 (Nice to Have)
-- Gamified "Family Chore Chart" with reward points
 - QR code for mobile server configuration
-- Live demo link in README
 - Recipe import from URL
-- Shared grocery list sync
-- Family member roles/permissions
 - Dark mode toggle
+- Recurring chores automation
 
-## Refactoring Notes
-- `/app/backend/server.py` is monolithic (750+ lines) - should be broken into feature-specific routers
+## GitHub Repository
+- Username: oak8989
+- Docker image: ghcr.io/oak8989/family-hub
