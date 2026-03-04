@@ -8,15 +8,15 @@ import CalendarPage from './pages/CalendarPage';
 import ShoppingPage from './pages/ShoppingPage';
 import TasksPage from './pages/TasksPage';
 import NotesPage from './pages/NotesPage';
-import MessagesPage from './pages/MessagesPage';
 import BudgetPage from './pages/BudgetPage';
 import MealPlannerPage from './pages/MealPlannerPage';
 import RecipesPage from './pages/RecipesPage';
 import GroceryPage from './pages/GroceryPage';
 import ContactsPage from './pages/ContactsPage';
-import PhotosPage from './pages/PhotosPage';
 import PantryPage from './pages/PantryPage';
 import SuggestionsPage from './pages/SuggestionsPage';
+import ChoresPage from './pages/ChoresPage';
+import SettingsPage from './pages/SettingsPage';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -49,15 +49,15 @@ const AppRoutes = () => {
       <Route path="/shopping" element={<ProtectedRoute><Layout><ShoppingPage /></Layout></ProtectedRoute>} />
       <Route path="/tasks" element={<ProtectedRoute><Layout><TasksPage /></Layout></ProtectedRoute>} />
       <Route path="/notes" element={<ProtectedRoute><Layout><NotesPage /></Layout></ProtectedRoute>} />
-      <Route path="/messages" element={<ProtectedRoute><Layout><MessagesPage /></Layout></ProtectedRoute>} />
       <Route path="/budget" element={<ProtectedRoute><Layout><BudgetPage /></Layout></ProtectedRoute>} />
       <Route path="/meals" element={<ProtectedRoute><Layout><MealPlannerPage /></Layout></ProtectedRoute>} />
       <Route path="/recipes" element={<ProtectedRoute><Layout><RecipesPage /></Layout></ProtectedRoute>} />
       <Route path="/grocery" element={<ProtectedRoute><Layout><GroceryPage /></Layout></ProtectedRoute>} />
       <Route path="/contacts" element={<ProtectedRoute><Layout><ContactsPage /></Layout></ProtectedRoute>} />
-      <Route path="/photos" element={<ProtectedRoute><Layout><PhotosPage /></Layout></ProtectedRoute>} />
       <Route path="/pantry" element={<ProtectedRoute><Layout><PantryPage /></Layout></ProtectedRoute>} />
       <Route path="/suggestions" element={<ProtectedRoute><Layout><SuggestionsPage /></Layout></ProtectedRoute>} />
+      <Route path="/chores" element={<ProtectedRoute><Layout><ChoresPage /></Layout></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Layout><SettingsPage /></Layout></ProtectedRoute>} />
     </Routes>
   );
 };
