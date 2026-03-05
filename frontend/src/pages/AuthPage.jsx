@@ -102,10 +102,7 @@ const AuthPage = () => {
     try {
       const result = await register(name, email, password, familyName);
       toast.success(`Family created! Your Family PIN is: ${result.family_pin}`, { duration: 10000 });
-      // Auto-login after registration since we get a token back
-      localStorage.setItem('token', result.token);
-      localStorage.setItem('user', JSON.stringify(result.user));
-      window.location.reload();
+      // Auth context handles the state update - will redirect automatically
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Registration failed');
     }
