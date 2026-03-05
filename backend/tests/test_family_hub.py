@@ -302,6 +302,14 @@ class TestChoresWithPoints:
             headers=headers
         )
         
+        # Re-login to get updated token with family_id
+        login_resp = requests.post(f"{BASE_URL}/api/auth/login", json={
+            "email": user_email,
+            "password": TEST_USER_PASSWORD
+        })
+        token = login_resp.json()["token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        
         return {"token": token, "user_id": user_id, "headers": headers}
     
     def test_create_chore_with_points(self, auth_setup):
@@ -467,6 +475,14 @@ class TestSettingsModule:
             json={"name": "Settings Test Family"},
             headers=headers
         )
+        
+        # Re-login to get updated token with family_id
+        login_resp = requests.post(f"{BASE_URL}/api/auth/login", json={
+            "email": user_email,
+            "password": TEST_USER_PASSWORD
+        })
+        token = login_resp.json()["token"]
+        headers = {"Authorization": f"Bearer {token}"}
         
         return {"token": token, "headers": headers}
     
