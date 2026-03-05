@@ -17,7 +17,7 @@ import uuid
 import secrets
 import string
 from datetime import datetime, timezone
-import jwt
+from jose import jwt
 import bcrypt
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request as GoogleRequest
