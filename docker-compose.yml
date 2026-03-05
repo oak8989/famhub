@@ -1,59 +1,45 @@
 version: '3.8'
 
+# =============================================================================
+# Family Hub - Self-Contained Deployment
+# Single container with MongoDB included
+# =============================================================================
+
 services:
-  # ==========================================================================
-  # Family Hub Application
-  # ==========================================================================
   family-hub:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: family-hub:latest
+    image: ghcr.io/oak8989/family-hub:latest
     container_name: family-hub
-    restart: unless-stopped
     ports:
-      - "${PORT:-8001}:8001"
+      - "8001:8001"
+    volumes:
+      # Persistent data storage
+      - family-hub-data:/data/db
+      - family-hub-photos:/app/backend/photos
     environment:
-      - MONGO_URL=mongodb://mongo:27017
-      - DB_NAME=${DB_NAME:-family_hub}
-      - JWT_SECRET=${JWT_SECRET:-change-this-secret-in-production}
-      - CORS_ORIGINS=${CORS_ORIGINS:-*}
-    volumes:
-      - photos-data:/app/backend/photos
-    depends_on:
-      mongo:
-        condition: service_healthy
-    networks:
-      - family-network
-
-  # ==========================================================================
-  # MongoDB Database
-  # ==========================================================================
-  mongo:
-    image: mongo:7
-    container_name: family-hub-mongo
+      # Required: Change this to a secure random string!
+      - JWT_SECRET=${JWT_SECRET:-change-this-secret-key}
+      
+      # Optional: Email invitations
+      # - SMTP_HOST=smtp.gmail.com
+      # - SMTP_PORT=587
+      # - SMTP_USER=your-email@gmail.com
+      # - SMTP_PASSWORD=your-app-password
+      # - SMTP_FROM=Family Hub <noreply@familyhub.local>
+      
+      # Optional: Google Calendar sync
+      # - GOOGLE_CLIENT_ID=your-client-id
+      # - GOOGLE_CLIENT_SECRET=your-client-secret
+      # - GOOGLE_REDIRECT_URI=https://your-domain.com/api/calendar/google/callback
     restart: unless-stopped
-    volumes:
-      - mongo-data:/data/db
-    networks:
-      - family-network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
-# ==========================================================================
-# Volumes
-# ==========================================================================
 volumes:
-  mongo-data:
-  photos-data:
-
-# ==========================================================================
-# Networks
-# ==========================================================================
-networks:
-  family-network:
-    driver: bridge
+  family-hub-data:
+    name: family-hub-data
+  family-hub-photos:
+    name: family-hub-photos
