@@ -564,8 +564,8 @@ async def remove_member(member_id: str, user: dict = Depends(get_current_user)):
 
 @api_router.post("/family/members/{member_id}/regenerate-pin")
 async def regenerate_user_pin(member_id: str, user: dict = Depends(get_current_user)):
-    user_data = await db.users.find_one({"id": user["user_id"]}, {"_id": 0})
-    if user_data.get("role") not in ["owner", "parent"] and user["user_id"] != member_id:
+    user_role = await get_user_role(user)
+    if user_role not in ["owner", "parent"] and user["user_id"] != member_id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     new_pin = generate_user_pin()
