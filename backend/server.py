@@ -586,8 +586,8 @@ async def update_settings(settings: FamilySettings, user: dict = Depends(get_cur
     if not user.get("family_id"):
         raise HTTPException(status_code=400, detail="No family associated with user")
     
-    user_data = await db.users.find_one({"id": user["user_id"]}, {"_id": 0})
-    if user_data.get("role") not in ["owner", "parent"]:
+    user_role = await get_user_role(user)
+    if user_role not in ["owner", "parent"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     update_data = {}
