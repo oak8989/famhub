@@ -969,8 +969,8 @@ async def get_leaderboard(user: dict = Depends(get_current_user)):
 
 @api_router.delete("/rewards/{reward_id}")
 async def delete_reward(reward_id: str, user: dict = Depends(get_current_user)):
-    user_data = await db.users.find_one({"id": user["user_id"]}, {"_id": 0})
-    if user_data.get("role") not in ["owner", "parent"]:
+    user_role = await get_user_role(user)
+    if user_role not in ["owner", "parent"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     await db.rewards.delete_one({"id": reward_id, "family_id": user["family_id"]})
