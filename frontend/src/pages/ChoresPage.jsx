@@ -204,14 +204,14 @@ const ChoresPage = () => {
                   <div className="space-y-2">
                     <Label>Assign To</Label>
                     <Select
-                      value={newChore.assigned_to}
-                      onValueChange={(value) => setNewChore({ ...newChore, assigned_to: value })}
+                      value={newChore.assigned_to || "anyone"}
+                      onValueChange={(value) => setNewChore({ ...newChore, assigned_to: value === "anyone" ? "" : value })}
                     >
                       <SelectTrigger data-testid="chore-assign-select">
                         <SelectValue placeholder="Select member" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Anyone</SelectItem>
+                        <SelectItem value="anyone">Anyone</SelectItem>
                         {members.map((m) => (
                           <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                         ))}
