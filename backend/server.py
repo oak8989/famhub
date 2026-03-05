@@ -575,6 +575,9 @@ async def get_settings(user: dict = Depends(get_current_user)):
 
 @api_router.put("/settings")
 async def update_settings(settings: FamilySettings, user: dict = Depends(get_current_user)):
+    if not user.get("family_id"):
+        raise HTTPException(status_code=400, detail="No family associated with user")
+    
     user_data = await db.users.find_one({"id": user["user_id"]}, {"_id": 0})
     if user_data.get("role") not in ["owner", "parent"]:
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -593,6 +596,8 @@ async def update_settings(settings: FamilySettings, user: dict = Depends(get_cur
         await db.families.update_one({"id": user["family_id"]}, {"$set": update_data})
     
     family = await db.families.find_one({"id": user["family_id"]}, {"_id": 0})
+    if not family:
+        raise HTTPException(status_code=404, detail="Family not found")
     return family.get("settings", DEFAULT_FAMILY_SETTINGS)
 
 @api_router.get("/settings/server")
@@ -829,11 +834,17 @@ async def get_chores(user: dict = Depends(get_current_user)):
 
 @api_router.post("/chores")
 async def create_chore(chore: Chore, user: dict = Depends(get_current_user)):
+    if not user.get("family_id"):
+        raise HTTPException(status_code=400, detail="No family associated with user")
+    
     chore_doc = chore.model_dump()
     chore_doc["family_id"] = user["family_id"]
     chore_doc["created_by"] = user["user_id"]
     
     family = await db.families.find_one({"id": user["family_id"]}, {"_id": 0})
+    if not family:
+        raise HTTPException(status_code=404, detail="Family not found")
+    
     settings = family.get("settings", DEFAULT_FAMILY_SETTINGS)
     point_values = settings.get("chore_rewards", {}).get("point_values", {"easy": 5, "medium": 10, "hard": 20})
     chore_doc["points"] = point_values.get(chore.difficulty, 10)
