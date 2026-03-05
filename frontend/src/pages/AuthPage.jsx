@@ -385,6 +385,12 @@ const AuthPage = () => {
                 {/* Register */}
                 <TabsContent value="register">
                   <form onSubmit={handleRegister} className="space-y-4">
+                    <div className="bg-sage/10 rounded-xl p-4 mb-2">
+                      <p className="text-sage text-sm flex items-center gap-2">
+                        <Home className="w-4 h-4" />
+                        Create your account and family hub in one step!
+                      </p>
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-navy mb-2">Your Name</label>
                       <div className="relative">
@@ -396,6 +402,20 @@ const AuthPage = () => {
                           placeholder="John Doe"
                           className="input-cozy pl-10"
                           data-testid="register-name"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-navy mb-2">Family Name</label>
+                      <div className="relative">
+                        <Home className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-navy-light" />
+                        <Input
+                          type="text"
+                          value={familyName}
+                          onChange={(e) => setFamilyName(e.target.value)}
+                          placeholder="The Smiths"
+                          className="input-cozy pl-10"
+                          data-testid="register-family-name"
                         />
                       </div>
                     </div>
@@ -429,13 +449,16 @@ const AuthPage = () => {
                     </div>
                     <Button
                       type="submit"
-                      disabled={loading}
+                      disabled={loading || !name || !email || !password || !familyName}
                       className="btn-primary w-full"
                       data-testid="register-submit"
                     >
-                      {loading ? 'Creating...' : 'Create Account'}
+                      {loading ? 'Creating...' : 'Create Family Hub'}
                       <Sparkles className="w-4 h-4 ml-2" />
                     </Button>
+                    <p className="text-xs text-navy-light text-center">
+                      A 6-digit Family PIN will be auto-generated for easy member access
+                    </p>
                   </form>
 
                   <div className="mt-6 pt-6 border-t border-sunny/30">
