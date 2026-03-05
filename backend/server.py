@@ -916,8 +916,8 @@ async def get_rewards(user: dict = Depends(get_current_user)):
 
 @api_router.post("/rewards")
 async def create_reward(reward: Reward, user: dict = Depends(get_current_user)):
-    user_data = await db.users.find_one({"id": user["user_id"]}, {"_id": 0})
-    if user_data.get("role") not in ["owner", "parent"]:
+    user_role = await get_user_role(user)
+    if user_role not in ["owner", "parent"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     reward_doc = reward.model_dump()
