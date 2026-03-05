@@ -571,7 +571,7 @@ async def update_member_role(member_id: str, role_update: UserRoleUpdate, user: 
     if not target_user:
         raise HTTPException(status_code=404, detail="Member not found")
     
-    if target_user.get("role") == "owner" and user_role != "owner":
+    if target_user.get("role") == "owner":
         raise HTTPException(status_code=403, detail="Cannot change owner role")
     
     await db.users.update_one({"id": member_id}, {"$set": {"role": role_update.role}})
