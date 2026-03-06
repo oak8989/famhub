@@ -61,10 +61,10 @@ const ChoresPage = () => {
   const loadData = async () => {
     try {
       const [choresRes, rewardsRes, leaderboardRes, membersRes] = await Promise.all([
-        api.get('/api/chores'),
-        api.get('/api/rewards'),
-        api.get('/api/leaderboard'),
-        api.get('/api/family/members'),
+        api.get('/chores'),
+        api.get('/rewards'),
+        api.get('/leaderboard'),
+        api.get('/family/members'),
       ]);
       setChores(choresRes.data || []);
       setRewards(rewardsRes.data || []);
@@ -83,7 +83,7 @@ const ChoresPage = () => {
       return;
     }
     try {
-      await api.post('/api/chores', newChore);
+      await api.post('/chores', newChore);
       toast.success('Chore created');
       setChoreOpen(false);
       setNewChore({ title: '', description: '', assigned_to: '', due_date: '', difficulty: 'medium' });
@@ -119,7 +119,7 @@ const ChoresPage = () => {
       return;
     }
     try {
-      await api.post('/api/rewards', newReward);
+      await api.post('/rewards', newReward);
       toast.success('Reward created');
       setRewardOpen(false);
       setNewReward({ name: '', description: '', points_required: 50 });
@@ -131,7 +131,7 @@ const ChoresPage = () => {
 
   const handleClaimReward = async (rewardId, userId) => {
     try {
-      await api.post('/api/rewards/claim', { reward_id: rewardId, user_id: userId });
+      await api.post('/rewards/claim', { reward_id: rewardId, user_id: userId });
       toast.success('Reward claimed!');
       loadData();
     } catch (error) {

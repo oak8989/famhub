@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timedelta
 
 class FamilyHubTester:
-    def __init__(self, base_url="https://family-hub-79.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://hub-staging-3.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.family_id = None

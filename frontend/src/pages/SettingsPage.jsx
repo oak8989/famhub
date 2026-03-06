@@ -77,9 +77,9 @@ const SettingsPage = () => {
   const loadData = async () => {
     try {
       const [membersRes, settingsRes, familyRes] = await Promise.all([
-        api.get('/api/family/members'),
-        api.get('/api/settings'),
-        api.get('/api/family'),
+        api.get('/family/members'),
+        api.get('/settings'),
+        api.get('/family'),
       ]);
       setMembers(membersRes.data || []);
       setSettings(settingsRes.data);
@@ -96,7 +96,7 @@ const SettingsPage = () => {
 
   const handleUpdateFamilyName = async () => {
     try {
-      await api.put('/api/family', { name: familyName });
+      await api.put('/family', { name: familyName });
       toast.success('Family name updated');
       loadFamily();
     } catch (error) {
@@ -106,7 +106,7 @@ const SettingsPage = () => {
 
   const handleRegenerateFamilyPin = async () => {
     try {
-      const res = await api.post('/api/family/regenerate-pin');
+      const res = await api.post('/family/regenerate-pin');
       setFamilyPin(res.data.pin);
       toast.success(`New Family PIN: ${res.data.pin}`);
     } catch (error) {
@@ -120,7 +120,7 @@ const SettingsPage = () => {
       return;
     }
     try {
-      const res = await api.post('/api/family/add-member', newMember);
+      const res = await api.post('/family/add-member', newMember);
       setNewMemberResult(res.data);
       toast.success(`${newMember.name} added to family!`);
       loadData();
@@ -170,7 +170,7 @@ const SettingsPage = () => {
     newSettings.modules[module].enabled = enabled;
     setSettings(newSettings);
     try {
-      await api.put('/api/settings', { modules: newSettings.modules });
+      await api.put('/settings', { modules: newSettings.modules });
       toast.success('Settings saved');
     } catch (error) {
       toast.error('Failed to save settings');
@@ -192,7 +192,7 @@ const SettingsPage = () => {
     setSettings(newSettings);
     
     try {
-      await api.put('/api/settings', { modules: newSettings.modules });
+      await api.put('/settings', { modules: newSettings.modules });
     } catch (error) {
       toast.error('Failed to save settings');
     }
@@ -200,7 +200,7 @@ const SettingsPage = () => {
 
   const handleConnectGoogle = async () => {
     try {
-      const res = await api.get('/api/calendar/google/auth');
+      const res = await api.get('/calendar/google/auth');
       window.location.href = res.data.authorization_url;
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Google Calendar not configured');
@@ -209,7 +209,7 @@ const SettingsPage = () => {
 
   const handleDisconnectGoogle = async () => {
     try {
-      await api.delete('/api/calendar/google/disconnect');
+      await api.delete('/calendar/google/disconnect');
       toast.success('Google Calendar disconnected');
       refreshUser();
     } catch (error) {
@@ -219,7 +219,7 @@ const SettingsPage = () => {
 
   const handleSyncGoogle = async () => {
     try {
-      const res = await api.post('/api/calendar/google/sync');
+      const res = await api.post('/calendar/google/sync');
       toast.success(`Synced ${res.data.synced} events to Google Calendar`);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to sync');
