@@ -29,9 +29,7 @@
 | 🥬 **Grocery List** | Quick shopping list |
 | 👥 **Contacts** | Family address book |
 | 📦 **Pantry** | Inventory tracking with barcode scanner |
-| 💡 **Meal Ideas** | Recipe suggestions based on pantry* |
-
-*AI-powered suggestions available on Emergent platform only. Self-hosted uses recipe matching.
+| 💡 **Meal Ideas** | AI-powered recipe suggestions based on pantry |
 
 ### Admin Features
 - **User Management** - Add family members with auto-generated PINs
@@ -78,6 +76,8 @@ services:
       - family-hub-data:/data/db
     environment:
       - JWT_SECRET=change-this-to-a-secure-random-string
+      # Optional: AI-powered meal suggestions
+      - OPENAI_API_KEY=your-openai-api-key
       # Optional: Email invitations
       # - SMTP_HOST=smtp.gmail.com
       # - SMTP_PORT=587

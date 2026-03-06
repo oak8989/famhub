@@ -56,6 +56,9 @@ SMTP_FROM = os.environ.get('SMTP_FROM', '')
 # Emergent LLM Key for AI features
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 
+# OpenAI API Key (fallback for self-hosted)
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer(auto_error=False)
@@ -1311,39 +1314,24 @@ async def get_meal_suggestions(user: dict = Depends(get_current_user)):
 
 # ============== AI-POWERED MEAL SUGGESTIONS ==============
 
-# Check if emergentintegrations is available (optional dependency)
+# Check if emergentintegrations is available (Emergent platform)
 try:
     from emergentintegrations.llm.chat import LlmChat, UserMessage
     EMERGENT_AVAILABLE = True
 except ImportError:
     EMERGENT_AVAILABLE = False
-    logger.info("emergentintegrations not available - AI features disabled")
+    logger.info("emergentintegrations not available - will use OpenAI fallback if configured")
 
-class AIMealSuggestionRequest(BaseModel):
-    use_ai: bool = True
+# Import OpenAI for self-hosted fallback
+try:
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    logger.info("openai package not available")
 
-@api_router.post("/suggestions/ai")
-async def get_ai_meal_suggestions(request: AIMealSuggestionRequest, user: dict = Depends(get_current_user)):
-    """Generate AI-powered meal suggestions based on pantry items"""
-    pantry_items = await db.pantry_items.find({"family_id": user["family_id"]}, {"_id": 0}).to_list(1000)
-    
-    if not pantry_items:
-        return {"suggestions": [], "message": "Add items to your pantry first!"}
-    
-    pantry_names = [f"{p['name']} ({p.get('quantity', 1)} {p.get('unit', 'pcs')})" for p in pantry_items]
-    
-    if not EMERGENT_AVAILABLE:
-        return {"suggestions": [], "message": "AI features not available in self-hosted mode. Use recipe matching instead!"}
-    
-    if not EMERGENT_LLM_KEY:
-        return {"suggestions": [], "message": "AI features not configured. Please add EMERGENT_LLM_KEY environment variable."}
-    
-    try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"meal-suggestion-{user['family_id']}-{uuid.uuid4()}",
-            system_message="""You are a helpful family chef assistant. Given a list of pantry items, suggest creative and practical meal ideas.
-            
+AI_SYSTEM_PROMPT = """You are a helpful family chef assistant. Given a list of pantry items, suggest creative and practical meal ideas.
+
 For each suggestion, provide:
 - name: The meal name
 - description: A brief appetizing description
@@ -1355,34 +1343,77 @@ For each suggestion, provide:
 
 Respond ONLY with valid JSON in this exact format:
 {"meals": [{"name": "...", "description": "...", "difficulty": "easy", "time": 30, "ingredients": ["item (have)", "item (need)"], "instructions": ["Step 1", "Step 2"], "tips": "..."}]}"""
-        ).with_model("openai", "gpt-4o-mini")
-        
-        prompt = f"""Based on these pantry items, suggest 3-4 creative meal ideas that can be made:
+
+class AIMealSuggestionRequest(BaseModel):
+    use_ai: bool = True
+
+def parse_ai_response(response_text: str) -> dict:
+    """Parse JSON from AI response"""
+    try:
+        json_start = response_text.find('{')
+        json_end = response_text.rfind('}') + 1
+        if json_start >= 0 and json_end > json_start:
+            json_str = response_text[json_start:json_end]
+            data = json.loads(json_str)
+            return {"suggestions": data.get("meals", []), "message": "AI suggestions generated!"}
+    except json.JSONDecodeError:
+        pass
+    return {"suggestions": [], "message": "Could not parse AI response"}
+
+@api_router.post("/suggestions/ai")
+async def get_ai_meal_suggestions(request: AIMealSuggestionRequest, user: dict = Depends(get_current_user)):
+    """Generate AI-powered meal suggestions based on pantry items"""
+    pantry_items = await db.pantry_items.find({"family_id": user["family_id"]}, {"_id": 0}).to_list(1000)
+    
+    if not pantry_items:
+        return {"suggestions": [], "message": "Add items to your pantry first!"}
+    
+    pantry_names = [f"{p['name']} ({p.get('quantity', 1)} {p.get('unit', 'pcs')})" for p in pantry_items]
+    
+    prompt = f"""Based on these pantry items, suggest 3-4 creative meal ideas that can be made:
 
 Pantry items: {', '.join(pantry_names)}
 
 Focus on meals that use mostly what's available. Mark ingredients as "(have)" if they're in the pantry, "(need)" if they need to be bought."""
-        
-        user_message = UserMessage(text=prompt)
-        response = await chat.send_message(user_message)
-        
-        # Parse the JSON response
+
+    # Try Emergent LLM first (platform mode)
+    if EMERGENT_AVAILABLE and EMERGENT_LLM_KEY:
         try:
-            # Find JSON in the response
-            json_start = response.find('{')
-            json_end = response.rfind('}') + 1
-            if json_start >= 0 and json_end > json_start:
-                json_str = response[json_start:json_end]
-                data = json.loads(json_str)
-                return {"suggestions": data.get("meals", []), "message": "AI suggestions generated!"}
-        except json.JSONDecodeError:
-            pass
-        
-        return {"suggestions": [], "raw_response": response, "message": "Could not parse AI response"}
-        
-    except Exception as e:
-        logger.error(f"AI suggestion error: {e}")
-        return {"suggestions": [], "message": f"AI service error: {str(e)}"}
+            chat = LlmChat(
+                api_key=EMERGENT_LLM_KEY,
+                session_id=f"meal-suggestion-{user['family_id']}-{uuid.uuid4()}",
+                system_message=AI_SYSTEM_PROMPT
+            ).with_model("openai", "gpt-4o-mini")
+            
+            user_message = UserMessage(text=prompt)
+            response = await chat.send_message(user_message)
+            return parse_ai_response(response)
+        except Exception as e:
+            logger.error(f"Emergent AI error: {e}")
+            # Fall through to OpenAI fallback
+    
+    # Fallback to OpenAI (self-hosted mode)
+    if OPENAI_AVAILABLE and OPENAI_API_KEY:
+        try:
+            client = OpenAI(api_key=OPENAI_API_KEY)
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": AI_SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=2000
+            )
+            return parse_ai_response(response.choices[0].message.content)
+        except Exception as e:
+            logger.error(f"OpenAI error: {e}")
+            return {"suggestions": [], "message": f"AI service error: {str(e)}"}
+    
+    # No AI available
+    if not EMERGENT_LLM_KEY and not OPENAI_API_KEY:
+        return {"suggestions": [], "message": "AI not configured. Add OPENAI_API_KEY to enable AI meal suggestions."}
+    
+    return {"suggestions": [], "message": "AI service unavailable. Please try again later."}
 
 # ============== QR CODE FOR MOBILE SETUP ==============
 
