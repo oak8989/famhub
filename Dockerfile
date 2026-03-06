@@ -96,7 +96,7 @@ autostart=true\n\
 autorestart=true\n\
 stdout_logfile=/var/log/supervisor/familyhub.log\n\
 stderr_logfile=/var/log/supervisor/familyhub_err.log\n\
-environment=MONGO_URL="mongodb://localhost:27017",DB_NAME="family_hub",CORS_ORIGINS="*",EMERGENT_LLM_KEY="%(ENV_EMERGENT_LLM_KEY)s"\n\
+environment=MONGO_URL="%(ENV_MONGO_URL)s",DB_NAME="%(ENV_DB_NAME)s",CORS_ORIGINS="%(ENV_CORS_ORIGINS)s",OPENAI_API_KEY="%(ENV_OPENAI_API_KEY)s",JWT_SECRET="%(ENV_JWT_SECRET)s"\n\
 priority=2\n\
 startsecs=5\n\
 startretries=3\n\
@@ -106,6 +106,8 @@ startretries=3\n\
 ENV MONGO_URL=mongodb://localhost:27017 \
     DB_NAME=family_hub \
     CORS_ORIGINS=* \
+    OPENAI_API_KEY="" \
+    JWT_SECRET=family-hub-secret-change-me \
     PORT=8001
 
 # Expose port
