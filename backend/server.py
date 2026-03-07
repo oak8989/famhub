@@ -543,22 +543,30 @@ async def invite_member(invite: UserInvite, user: dict = Depends(get_current_use
 
 class QuickAddMember(BaseModel):
     name: str
+    email: Optional[str] = None
     role: str = "member"
 
 @api_router.post("/family/add-member")
 async def quick_add_member(member: QuickAddMember, user: dict = Depends(get_current_user)):
-    """Add a family member without email - just creates a PIN for them to login"""
+    """Add a family member - optionally with email for invitation"""
     user_role = await get_user_role(user)
     if user_role not in ["owner", "parent"]:
         raise HTTPException(status_code=403, detail="Not authorized to add members")
     
+    # Check if email already exists
+    if member.email:
+        existing = await db.users.find_one({"email": member.email}, {"_id": 0})
+        if existing:
+            raise HTTPException(status_code=400, detail="A user with this email already exists")
+    
     user_pin = generate_user_pin()
+    temp_password = secrets.token_urlsafe(12) if member.email else None
     
     new_user = {
         "id": str(uuid.uuid4()),
         "name": member.name,
-        "email": None,
-        "password": None,
+        "email": member.email if member.email else None,
+        "password": hash_password(temp_password) if temp_password else None,
         "role": member.role,
         "user_pin": user_pin,
         "avatar_seed": str(uuid.uuid4()),
@@ -569,13 +577,42 @@ async def quick_add_member(member: QuickAddMember, user: dict = Depends(get_curr
     }
     await db.users.insert_one(new_user)
     
-    return {
-        "message": f"{member.name} added to family!", 
-        "user_id": new_user["id"], 
-        "user_pin": user_pin,
+    result = {
+        "id": new_user["id"],
         "name": member.name,
-        "role": member.role
+        "role": member.role,
+        "user_pin": user_pin,
+        "email_sent": False
     }
+    
+    # If email provided, try to send invitation
+    if member.email and SMTP_HOST:
+        try:
+            family = await db.families.find_one({"id": user["family_id"]}, {"_id": 0})
+            inviter = await db.users.find_one({"id": user["user_id"]}, {"_id": 0, "name": 1})
+            inviter_name = inviter.get("name", "A family member") if inviter else "A family member"
+            
+            email_html = f"""
+            <h2>Welcome to {family['name']} on Family Hub!</h2>
+            <p>You've been invited by {inviter_name} to join the family.</p>
+            <p><strong>Your login credentials:</strong></p>
+            <ul>
+                <li>Email: {member.email}</li>
+                <li>Temporary Password: {temp_password}</li>
+                <li>Your PIN: {user_pin}</li>
+            </ul>
+            <p>Please change your password after logging in.</p>
+            """
+            await send_email(member.email, f"You're invited to {family['name']} - Family Hub", email_html)
+            result["email_sent"] = True
+            result["temp_password"] = temp_password
+        except Exception as e:
+            logger.error(f"Failed to send invite email: {e}")
+            result["email_error"] = "Email could not be sent. Check SMTP configuration."
+    elif member.email and not SMTP_HOST:
+        result["email_error"] = "SMTP not configured. Share the PIN manually."
+    
+    return result
 
 @api_router.put("/family/members/{member_id}/role")
 async def update_member_role(member_id: str, role_update: UserRoleUpdate, user: dict = Depends(get_current_user)):

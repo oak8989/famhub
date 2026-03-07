@@ -57,7 +57,7 @@ const SettingsPage = () => {
   const [familyPin, setFamilyPin] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const [newMember, setNewMember] = useState({ name: '', role: 'member' });
+  const [newMember, setNewMember] = useState({ name: '', email: '', role: 'member' });
   const [newMemberResult, setNewMemberResult] = useState(null);
   const [loading, setLoading] = useState(true);
   
@@ -137,7 +137,7 @@ const SettingsPage = () => {
 
   const handleCloseAddMember = () => {
     setAddMemberOpen(false);
-    setNewMember({ name: '', role: 'member' });
+    setNewMember({ name: '', email: '', role: 'member' });
     setNewMemberResult(null);
   };
 
@@ -372,7 +372,13 @@ const SettingsPage = () => {
                         <div className="text-center p-4 bg-green-50 rounded-xl">
                           <Check className="w-12 h-12 text-green-500 mx-auto mb-2" />
                           <h3 className="font-bold text-navy text-lg">{newMemberResult.name} Added!</h3>
-                          <p className="text-navy-light">Share their PIN so they can login</p>
+                          {newMemberResult.email_sent ? (
+                            <p className="text-green-600">Invitation email sent!</p>
+                          ) : newMemberResult.email_error ? (
+                            <p className="text-amber-600 text-sm">{newMemberResult.email_error}</p>
+                          ) : (
+                            <p className="text-navy-light">Share their PIN so they can login</p>
+                          )}
                         </div>
                         <div className="p-4 bg-cream rounded-xl">
                           <Label className="text-sm text-navy-light">Login PIN</Label>
@@ -383,6 +389,17 @@ const SettingsPage = () => {
                             </Button>
                           </div>
                         </div>
+                        {newMemberResult.temp_password && (
+                          <div className="p-4 bg-cream rounded-xl">
+                            <Label className="text-sm text-navy-light">Temporary Password</Label>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="font-mono font-bold text-navy">{newMemberResult.temp_password}</span>
+                              <Button variant="ghost" size="icon" onClick={() => copyToClipboard(newMemberResult.temp_password)}>
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                         <p className="text-sm text-navy-light text-center">
                           {newMemberResult.name} can use this PIN on the login screen to access Family Hub
                         </p>
@@ -398,6 +415,19 @@ const SettingsPage = () => {
                             placeholder="Enter name"
                             data-testid="new-member-name-input"
                           />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Email (Optional - for invite)</Label>
+                          <Input
+                            type="email"
+                            value={newMember.email}
+                            onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                            placeholder="email@example.com"
+                            data-testid="new-member-email-input"
+                          />
+                          <p className="text-xs text-navy-light">
+                            If provided, an invitation email will be sent (requires SMTP setup)
+                          </p>
                         </div>
                         <div className="space-y-2">
                           <Label>Role</Label>
@@ -582,9 +612,21 @@ const SettingsPage = () => {
                     </div>
                   </div>
                 ) : (
-                  <Button onClick={handleConnectGoogle} data-testid="connect-google-btn">
-                    <Calendar className="w-4 h-4 mr-2" /> Connect Google Calendar
-                  </Button>
+                  <div className="space-y-4">
+                    <Button onClick={handleConnectGoogle} data-testid="connect-google-btn">
+                      <Calendar className="w-4 h-4 mr-2" /> Connect Google Calendar
+                    </Button>
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-sm text-amber-700">
+                        <strong>Note:</strong> Google Calendar requires setup. Add these environment variables to your server:
+                      </p>
+                      <ul className="text-xs text-amber-600 mt-2 space-y-1 list-disc list-inside">
+                        <li>GOOGLE_CLIENT_ID</li>
+                        <li>GOOGLE_CLIENT_SECRET</li>
+                        <li>GOOGLE_REDIRECT_URI</li>
+                      </ul>
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
