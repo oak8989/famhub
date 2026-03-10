@@ -91,8 +91,8 @@ stderr_logfile=/var/log/supervisor/mongodb_err.log\n\
 priority=1\n\
 \n\
 [program:familyhub]\n\
-command=/app/venv/bin/python -m uvicorn backend.server:app --host 0.0.0.0 --port 8001\n\
-directory=/app\n\
+command=/app/venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001\n\
+directory=/app/backend\n\
 autostart=true\n\
 autorestart=true\n\
 stdout_logfile=/var/log/supervisor/familyhub.log\n\
@@ -103,8 +103,8 @@ startsecs=5\n\
 startretries=3\n\
 \n\
 [program:admin]\n\
-command=/app/venv/bin/python -m uvicorn backend.admin_portal:app --host 0.0.0.0 --port 8050\n\
-directory=/app\n\
+command=/app/venv/bin/uvicorn admin_portal:app --host 0.0.0.0 --port 8050\n\
+directory=/app/backend\n\
 autostart=true\n\
 autorestart=true\n\
 stdout_logfile=/var/log/supervisor/admin.log\n\
