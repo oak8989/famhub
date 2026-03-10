@@ -80,11 +80,35 @@ async def get_ai_meal_suggestions(user: dict = Depends(get_current_user)):
         return {"suggestions": [], "message": "Add items to your pantry first!"}
 
     pantry_names = [f"{p['name']} ({p.get('quantity', 1)} {p.get('unit', 'pcs')})" for p in pantry_items]
+
+    # Find items expiring soon to prioritize
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+    expiring_soon = []
+    for p in pantry_items:
+        if p.get("expiry_date"):
+            try:
+                exp = datetime.fromisoformat(p["expiry_date"].replace("Z", "+00:00")) if "T" in p["expiry_date"] else datetime.strptime(p["expiry_date"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                if exp - now < timedelta(days=5):
+                    expiring_soon.append(p["name"])
+            except (ValueError, TypeError):
+                pass
+
+    # Get recent meal plans to avoid repetition
+    recent_meals = await db.meal_plans.find({"family_id": user["family_id"]}, {"_id": 0, "recipe_name": 1}).sort("date", -1).to_list(10)
+    recent_names = [m.get("recipe_name", "") for m in recent_meals if m.get("recipe_name")]
+
     prompt = f"""Based on these pantry items, suggest 3-4 creative meal ideas that can be made:
 
-Pantry items: {', '.join(pantry_names)}
+Pantry items: {', '.join(pantry_names)}"""
 
-Focus on meals that use mostly what's available. Mark ingredients as "(have)" if they're in the pantry, "(need)" if they need to be bought."""
+    if expiring_soon:
+        prompt += f"\n\nPRIORITY - Use these items first (expiring soon): {', '.join(expiring_soon)}"
+
+    if recent_names:
+        prompt += f"\n\nAvoid repeating these recent meals: {', '.join(recent_names[:5])}"
+
+    prompt += "\n\nFocus on meals that use mostly what's available. Mark ingredients as \"(have)\" if they're in the pantry, \"(need)\" if they need to be bought."
 
     if EMERGENT_AVAILABLE and EMERGENT_LLM_KEY:
         try:

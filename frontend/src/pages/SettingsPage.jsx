@@ -15,9 +15,9 @@ import { toast } from 'sonner';
 import { 
   Settings, Users, Shield, Calendar, UserPlus, Trash2, 
   RefreshCw, Server, Check, X, Crown, Eye, EyeOff, Copy, Key,
-  QrCode, Download, Bell, BellOff, Smartphone
+  QrCode, Download, Bell, BellOff, Smartphone, Upload, Loader2
 } from 'lucide-react';
-import api, { qrCodeAPI, notificationsAPI, exportAPI } from '../lib/api';
+import api, { qrCodeAPI, notificationsAPI, exportAPI, importAPI } from '../lib/api';
 
 const ROLE_COLORS = {
   owner: 'bg-amber-500',
@@ -65,6 +65,7 @@ const SettingsPage = () => {
   const [qrCode, setQrCode] = useState(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
 
   const isAdmin = user?.role === 'owner' || user?.role === 'parent';
   const isOwner = user?.role === 'owner';
@@ -877,10 +878,62 @@ GOOGLE_REDIRECT_URI=https://your-domain.com/api/calendar/google/callback`}
               </div>
 
               {/* Info */}
-              <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
-                <p className="text-sm text-blue-700">
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
                   <strong>Tip:</strong> Regular backups help protect your family data. We recommend downloading a backup at least once a month.
                 </p>
+              </div>
+
+              {/* Data Import */}
+              <div className="p-4 bg-cream dark:bg-gray-700/30 rounded-xl">
+                <h3 className="font-medium text-navy dark:text-gray-200 mb-2">Import Data</h3>
+                <p className="text-sm text-navy-light dark:text-gray-400 mb-4">
+                  Restore from a previous backup. Data will be <strong>merged</strong> with existing data (duplicates are skipped).
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <label className="flex-1">
+                    <input
+                      type="file"
+                      accept=".json"
+                      className="hidden"
+                      data-testid="import-file-input"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        if (!file.name.endsWith('.json')) {
+                          toast.error('Please select a JSON backup file');
+                          return;
+                        }
+                        setImportLoading(true);
+                        try {
+                          const response = await importAPI.importData(file);
+                          const data = response.data;
+                          toast.success(data.message);
+                        } catch (error) {
+                          const detail = error.response?.data?.detail || 'Failed to import data';
+                          toast.error(detail);
+                        }
+                        setImportLoading(false);
+                        e.target.value = '';
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      className="w-full border-sage dark:border-gray-600 cursor-pointer"
+                      disabled={importLoading}
+                      data-testid="import-data-btn"
+                      asChild
+                    >
+                      <span>
+                        {importLoading ? (
+                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Importing...</>
+                        ) : (
+                          <><Upload className="w-4 h-4 mr-2" /> Import Backup (JSON)</>
+                        )}
+                      </span>
+                    </Button>
+                  </label>
+                </div>
               </div>
             </CardContent>
           </Card>

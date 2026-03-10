@@ -4,6 +4,7 @@ from models.schemas import Note
 from auth import get_current_user
 from database import db
 from routers.websocket import notify_family
+from routers.utilities import send_push_to_family
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/notes", tags=["notes"])
@@ -25,6 +26,8 @@ async def create_note(note: Note, user: dict = Depends(get_current_user)):
     await db.notes.insert_one(note_doc)
     del note_doc["_id"]
     del note_doc["family_id"]
+    await notify_family(user["family_id"], "update", "notes")
+    await send_push_to_family(user["family_id"], "New Note", f"'{note_doc['title']}' was shared", "/notes")
     return note_doc
 
 

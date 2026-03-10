@@ -2,6 +2,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from models.schemas import Chore, Reward, RewardClaim
 from auth import get_current_user, get_user_role, DEFAULT_FAMILY_SETTINGS
 from database import db
+from routers.websocket import notify_family
+from routers.utilities import send_push_to_family
 from datetime import datetime, timezone
 import uuid
 
@@ -67,6 +69,8 @@ async def complete_chore(chore_id: str, user: dict = Depends(get_current_user)):
         {"$set": {"completed": True, "completed_at": datetime.now(timezone.utc).isoformat()}}
     )
     await db.users.update_one({"id": completer_id}, {"$inc": {"points": chore.get("points", 10)}})
+    await notify_family(user["family_id"], "update", "chores")
+    await send_push_to_family(user["family_id"], "Chore Complete!", f"'{chore['title']}' done! +{chore.get('points', 10)} points", "/chores")
     return {"message": "Chore completed", "points_earned": chore.get("points", 10)}
 
 

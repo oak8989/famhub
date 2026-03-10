@@ -4,6 +4,7 @@ from models.schemas import ShoppingItem
 from auth import get_current_user
 from database import db
 from routers.websocket import notify_family
+from routers.utilities import send_push_to_family
 
 router = APIRouter(prefix="/api/shopping", tags=["shopping"])
 
@@ -25,6 +26,7 @@ async def create_shopping_item(item: ShoppingItem, user: dict = Depends(get_curr
     del item_doc["_id"]
     del item_doc["family_id"]
     await notify_family(user["family_id"], "update", "shopping")
+    await send_push_to_family(user["family_id"], "Shopping List", f"'{item_doc['name']}' was added", "/shopping")
     return item_doc
 
 

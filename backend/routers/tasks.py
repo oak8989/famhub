@@ -4,6 +4,7 @@ from models.schemas import Task
 from auth import get_current_user
 from database import db
 from routers.websocket import notify_family
+from routers.utilities import send_push_to_family
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
@@ -29,6 +30,8 @@ async def create_task(task: Task, user: dict = Depends(get_current_user)):
     del task_doc["_id"]
     del task_doc["family_id"]
     await notify_family(user["family_id"], "update", "tasks")
+    name = task_doc.get("assigned_to_name", "someone")
+    await send_push_to_family(user["family_id"], "New Task", f"'{task_doc['title']}' assigned to {name}", "/tasks")
     return task_doc
 
 

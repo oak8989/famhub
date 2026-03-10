@@ -214,10 +214,20 @@ export const notificationsAPI = {
   unsubscribe: () => api.delete('/notifications/unsubscribe'),
 };
 
-// Data Export
+// Data Export & Import
 export const exportAPI = {
   exportAllData: () => api.get('/export/data', { responseType: 'blob' }),
   exportModuleCSV: (module) => api.get(`/export/csv/${module}`, { responseType: 'blob' }),
+};
+
+export const importAPI = {
+  importData: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/import/data', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 export default api;

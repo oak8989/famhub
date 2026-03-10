@@ -4,6 +4,8 @@ from typing import List
 from models.schemas import CalendarEvent
 from auth import get_current_user, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
 from database import db
+from routers.websocket import notify_family
+from routers.utilities import send_push_to_family
 import os
 import logging
 import requests
@@ -31,6 +33,8 @@ async def create_event(event: CalendarEvent, user: dict = Depends(get_current_us
     await db.calendar_events.insert_one(event_doc)
     del event_doc["_id"]
     del event_doc["family_id"]
+    await notify_family(user["family_id"], "update", "calendar")
+    await send_push_to_family(user["family_id"], "New Event", f"'{event_doc['title']}' on {event_doc['date']}", "/calendar")
     return event_doc
 
 
