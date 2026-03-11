@@ -108,26 +108,30 @@ const Layout = ({ children }) => {
 
       {/* Mobile Header & Menu */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="lg:hidden flex items-center justify-between p-4 bg-warm-white dark:bg-gray-800 border-b border-sunny/30 dark:border-gray-700 transition-colors">
+        <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-warm-white dark:bg-gray-800 border-b border-sunny/30 dark:border-gray-700 transition-colors" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-navy dark:text-gray-300"
+              className="text-navy dark:text-gray-300 p-2 -ml-2 rounded-lg active:bg-cream dark:active:bg-gray-700"
               data-testid="mobile-menu-btn"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
             <h1 className="text-xl font-heading font-bold text-terracotta">Family Hub</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
               onClick={toggleDarkMode}
-              className="text-navy dark:text-gray-300 p-2 rounded-lg hover:bg-cream dark:hover:bg-gray-700"
+              className="text-navy dark:text-gray-300 p-3 rounded-lg hover:bg-cream dark:hover:bg-gray-700 active:bg-cream/80 dark:active:bg-gray-600"
               data-testid="mobile-dark-mode-toggle"
             >
               {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
-            <button onClick={handleLogout} className="text-navy-light dark:text-gray-400" data-testid="mobile-logout-btn">
+            <button
+              onClick={handleLogout}
+              className="text-navy-light dark:text-gray-400 p-3 rounded-lg hover:bg-cream dark:hover:bg-gray-700 active:bg-red-50 dark:active:bg-red-900/30"
+              data-testid="mobile-logout-btn"
+            >
               <LogOut className="w-5 h-5" />
             </button>
           </div>
