@@ -214,6 +214,19 @@ export const notificationsAPI = {
   unsubscribe: () => api.delete('/notifications/unsubscribe'),
 };
 
+// Admin (Owner only)
+export const adminAPI = {
+  getStatus: () => api.get('/admin/status'),
+  getConfig: () => api.get('/admin/config'),
+  saveSmtp: (data) => api.post('/admin/config/smtp', data),
+  saveGoogle: (data) => api.post('/admin/config/google', data),
+  saveOpenai: (data) => api.post('/admin/config/openai', data),
+  saveServer: (data) => api.post('/admin/config/server', data),
+  testEmail: () => api.post('/admin/test-email'),
+  getLogs: (type = 'backend') => api.get(`/admin/logs?type=${type}`),
+  reboot: () => api.post('/admin/reboot'),
+};
+
 // Data Export & Import
 export const exportAPI = {
   exportAllData: () => api.get('/export/data', { responseType: 'blob' }),

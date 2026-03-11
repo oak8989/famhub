@@ -15,9 +15,11 @@ import { toast } from 'sonner';
 import { 
   Settings, Users, Shield, Calendar, UserPlus, Trash2, 
   RefreshCw, Server, Check, X, Crown, Eye, EyeOff, Copy, Key,
-  QrCode, Download, Bell, BellOff, Smartphone, Upload, Loader2
+  QrCode, Download, Bell, BellOff, Smartphone, Upload, Loader2,
+  Activity, Database, Mail, Brain, Wifi, WifiOff, FileText,
+  RotateCcw, Save, TestTube
 } from 'lucide-react';
-import api, { qrCodeAPI, notificationsAPI, exportAPI, importAPI } from '../lib/api';
+import api, { qrCodeAPI, notificationsAPI, exportAPI, importAPI, adminAPI } from '../lib/api';
 
 const ROLE_COLORS = {
   owner: 'bg-amber-500',
@@ -67,6 +69,17 @@ const SettingsPage = () => {
   const [exportLoading, setExportLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
 
+  // Admin panel state
+  const [adminStatus, setAdminStatus] = useState(null);
+  const [adminConfig, setAdminConfig] = useState(null);
+  const [adminTab, setAdminTab] = useState('email');
+  const [adminLogs, setAdminLogs] = useState('');
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [smtpForm, setSmtpForm] = useState({ smtp_host: '', smtp_port: 587, smtp_user: '', smtp_password: '', smtp_from: '' });
+  const [googleForm, setGoogleForm] = useState({ google_client_id: '', google_client_secret: '', google_redirect_uri: '' });
+  const [openaiForm, setOpenaiForm] = useState({ openai_api_key: '' });
+  const [serverForm, setServerForm] = useState({ jwt_secret: '', cors_origins: '*', db_name: 'family_hub' });
+
   const isAdmin = user?.role === 'owner' || user?.role === 'parent';
   const isOwner = user?.role === 'owner';
 
@@ -80,6 +93,10 @@ const SettingsPage = () => {
       toast.error('Failed to connect Google Calendar');
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (isOwner) loadAdminData();
+  }, [isOwner]);
 
   const loadData = async () => {
     try {
@@ -98,6 +115,70 @@ const SettingsPage = () => {
       console.error('Failed to load settings:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAdminData = async () => {
+    try {
+      const [statusRes, configRes] = await Promise.all([
+        adminAPI.getStatus(),
+        adminAPI.getConfig(),
+      ]);
+      setAdminStatus(statusRes.data);
+      setAdminConfig(configRes.data);
+      const c = configRes.data;
+      setSmtpForm({ smtp_host: c.smtp_host || '', smtp_port: c.smtp_port || 587, smtp_user: c.smtp_user || '', smtp_password: '', smtp_from: c.smtp_from || '' });
+      setGoogleForm({ google_client_id: c.google_client_id || '', google_client_secret: '', google_redirect_uri: c.google_redirect_uri || '' });
+      setOpenaiForm({ openai_api_key: '' });
+      setServerForm({ jwt_secret: '', cors_origins: c.cors_origins || '*', db_name: c.db_name || 'family_hub' });
+    } catch (error) {
+      console.error('Failed to load admin data:', error);
+    }
+  };
+
+  const handleAdminSave = async (section, data) => {
+    setAdminLoading(true);
+    try {
+      const savers = { email: adminAPI.saveSmtp, google: adminAPI.saveGoogle, openai: adminAPI.saveOpenai, server: adminAPI.saveServer };
+      const res = await savers[section](data);
+      toast.success(res.data.message || 'Settings saved! Restart server to apply.');
+      loadAdminData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to save settings');
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    setAdminLoading(true);
+    try {
+      const res = await adminAPI.testEmail();
+      if (res.data.success) toast.success(res.data.message);
+      else toast.error(res.data.message);
+    } catch (error) {
+      toast.error('Test failed');
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  const handleFetchLogs = async (type = 'backend') => {
+    try {
+      const res = await adminAPI.getLogs(type);
+      setAdminLogs(res.data.logs || 'No logs available');
+    } catch {
+      setAdminLogs('Failed to fetch logs');
+    }
+  };
+
+  const handleReboot = async () => {
+    if (!window.confirm('Restart the server? Users will be briefly disconnected.')) return;
+    try {
+      await adminAPI.reboot();
+      toast.success('Server is restarting...');
+    } catch {
+      toast.error('Failed to restart server');
     }
   };
 
@@ -634,38 +715,219 @@ const SettingsPage = () => {
           </TabsContent>
         )}
 
-        {/* Server Tab */}
+        {/* Server Admin Tab */}
         {isOwner && (
-          <TabsContent value="server" className="space-y-4">
+          <TabsContent value="server" className="space-y-4" data-testid="admin-server-tab">
+            {/* Status Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {[
+                { label: 'Backend', key: 'backend', icon: Activity, color: 'emerald' },
+                { label: 'Database', key: 'database', icon: Database, color: 'blue' },
+                { label: 'Email', key: 'smtp', icon: Mail, color: 'amber' },
+                { label: 'OpenAI', key: 'openai', icon: Brain, color: 'violet' },
+                { label: 'Google', key: 'google', icon: Calendar, color: 'sky' },
+              ].map(({ label, key, icon: Icon, color }) => {
+                const isUp = adminStatus?.[key];
+                const isBool = key === 'backend' || key === 'database';
+                const statusText = adminStatus ? (isBool ? (isUp ? 'Running' : 'Down') : (isUp ? 'Configured' : 'Not Set')) : 'Checking...';
+                return (
+                  <Card key={key} className="card-base">
+                    <CardContent className="p-3 text-center">
+                      <Icon className={`w-5 h-5 mx-auto mb-1 ${isUp ? `text-${color}-500` : 'text-gray-400'}`} />
+                      <p className="text-xs text-navy-light">{label}</p>
+                      <p className={`text-sm font-semibold ${isUp ? `text-${color}-600 dark:text-${color}-400` : 'text-gray-400'}`} data-testid={`admin-status-${key}`}>
+                        {statusText}
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => loadAdminData()} data-testid="admin-refresh-status-btn">
+                <RefreshCw className="w-4 h-4 mr-1" /> Refresh Status
+              </Button>
+              <Button variant="destructive" size="sm" onClick={handleReboot} data-testid="admin-reboot-btn">
+                <RotateCcw className="w-4 h-4 mr-1" /> Restart Server
+              </Button>
+            </div>
+
+            {/* Config Tabs */}
             <Card className="card-base">
-              <CardHeader>
-                <CardTitle className="text-navy">Server Configuration</CardTitle>
-                <CardDescription>These settings are configured in your server's environment variables</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 bg-cream rounded-xl">
-                  <h3 className="font-medium text-navy mb-2">SMTP Email Settings (Optional)</h3>
-                  <p className="text-sm text-navy-light mb-4">
-                    Configure these to enable email invitations:
-                  </p>
-                  <pre className="bg-navy text-cream p-3 rounded-lg text-sm overflow-x-auto">
-{`SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-SMTP_FROM=Family Hub <noreply@familyhub.local>`}
-                  </pre>
+              <CardContent className="p-0">
+                <div className="flex border-b overflow-x-auto">
+                  {[
+                    { id: 'email', label: 'Email', icon: Mail },
+                    { id: 'google', label: 'Google', icon: Calendar },
+                    { id: 'openai', label: 'OpenAI', icon: Brain },
+                    { id: 'server', label: 'Server', icon: Server },
+                    { id: 'logs', label: 'Logs', icon: FileText },
+                  ].map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      onClick={() => { setAdminTab(id); if (id === 'logs') handleFetchLogs(); }}
+                      className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+                        adminTab === id
+                          ? 'border-terracotta text-terracotta'
+                          : 'border-transparent text-navy-light hover:text-navy'
+                      }`}
+                      data-testid={`admin-tab-${id}`}
+                    >
+                      <Icon className="w-4 h-4" /> {label}
+                    </button>
+                  ))}
                 </div>
-                <div className="p-4 bg-cream rounded-xl">
-                  <h3 className="font-medium text-navy mb-2">Google Calendar (Optional)</h3>
-                  <p className="text-sm text-navy-light mb-4">
-                    To enable Google Calendar sync:
-                  </p>
-                  <pre className="bg-navy text-cream p-3 rounded-lg text-sm overflow-x-auto">
-{`GOOGLE_CLIENT_ID=your-client-id
-GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REDIRECT_URI=https://your-domain.com/api/calendar/google/callback`}
-                  </pre>
+
+                <div className="p-5">
+                  {/* Email Config */}
+                  {adminTab === 'email' && (
+                    <div className="space-y-4" data-testid="admin-panel-email">
+                      <div>
+                        <h3 className="font-semibold text-navy mb-1">Email (SMTP) Configuration</h3>
+                        <p className="text-sm text-navy-light">Configure SMTP to enable email invitations for family members.</p>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label>SMTP Host</Label>
+                          <Input placeholder="smtp.gmail.com" value={smtpForm.smtp_host} onChange={e => setSmtpForm({...smtpForm, smtp_host: e.target.value})} data-testid="admin-smtp-host" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label>SMTP Port</Label>
+                          <Input type="number" value={smtpForm.smtp_port} onChange={e => setSmtpForm({...smtpForm, smtp_port: parseInt(e.target.value) || 587})} data-testid="admin-smtp-port" />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>SMTP Username</Label>
+                        <Input placeholder="your-email@gmail.com" value={smtpForm.smtp_user} onChange={e => setSmtpForm({...smtpForm, smtp_user: e.target.value})} data-testid="admin-smtp-user" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>SMTP Password</Label>
+                        <Input type="password" placeholder="App password" value={smtpForm.smtp_password} onChange={e => setSmtpForm({...smtpForm, smtp_password: e.target.value})} data-testid="admin-smtp-password" />
+                        <p className="text-xs text-navy-light">For Gmail, use an App Password (not your regular password)</p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>From Email</Label>
+                        <Input placeholder="Family Hub <noreply@familyhub.local>" value={smtpForm.smtp_from} onChange={e => setSmtpForm({...smtpForm, smtp_from: e.target.value})} data-testid="admin-smtp-from" />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={() => handleAdminSave('email', smtpForm)} disabled={adminLoading} data-testid="admin-save-smtp-btn">
+                          <Save className="w-4 h-4 mr-1" /> Save SMTP
+                        </Button>
+                        <Button variant="outline" onClick={handleTestEmail} disabled={adminLoading} data-testid="admin-test-email-btn">
+                          <TestTube className="w-4 h-4 mr-1" /> Test Connection
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Google Config */}
+                  {adminTab === 'google' && (
+                    <div className="space-y-4" data-testid="admin-panel-google">
+                      <div>
+                        <h3 className="font-semibold text-navy mb-1">Google Calendar API</h3>
+                        <p className="text-sm text-navy-light">Enable Google Calendar sync for family events.</p>
+                      </div>
+                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+                        <strong>Setup:</strong> Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="underline">Google Cloud Console</a>, create OAuth 2.0 credentials, set redirect URI to <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded text-xs">{'your-domain'}/api/calendar/google/callback</code>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Google Client ID</Label>
+                        <Input placeholder="xxx.apps.googleusercontent.com" value={googleForm.google_client_id} onChange={e => setGoogleForm({...googleForm, google_client_id: e.target.value})} data-testid="admin-google-client-id" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Google Client Secret</Label>
+                        <Input type="password" value={googleForm.google_client_secret} onChange={e => setGoogleForm({...googleForm, google_client_secret: e.target.value})} data-testid="admin-google-secret" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Redirect URI</Label>
+                        <Input placeholder="https://your-domain.com/api/calendar/google/callback" value={googleForm.google_redirect_uri} onChange={e => setGoogleForm({...googleForm, google_redirect_uri: e.target.value})} data-testid="admin-google-redirect" />
+                      </div>
+                      <Button onClick={() => handleAdminSave('google', googleForm)} disabled={adminLoading} data-testid="admin-save-google-btn">
+                        <Save className="w-4 h-4 mr-1" /> Save Google Settings
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* OpenAI Config */}
+                  {adminTab === 'openai' && (
+                    <div className="space-y-4" data-testid="admin-panel-openai">
+                      <div>
+                        <h3 className="font-semibold text-navy mb-1">OpenAI Configuration</h3>
+                        <p className="text-sm text-navy-light">Enable AI-powered meal suggestions based on pantry items.</p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>OpenAI API Key</Label>
+                        <Input type="password" placeholder="sk-..." value={openaiForm.openai_api_key} onChange={e => setOpenaiForm({...openaiForm, openai_api_key: e.target.value})} data-testid="admin-openai-key" />
+                        <p className="text-xs text-navy-light">Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="underline">OpenAI Platform</a></p>
+                      </div>
+                      {adminConfig?.openai_api_key === '***' && (
+                        <div className="flex items-center gap-2 text-emerald-600 text-sm">
+                          <Check className="w-4 h-4" /> An API key is currently configured
+                        </div>
+                      )}
+                      <Button onClick={() => handleAdminSave('openai', openaiForm)} disabled={adminLoading} data-testid="admin-save-openai-btn">
+                        <Save className="w-4 h-4 mr-1" /> Save OpenAI Settings
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Server Config */}
+                  {adminTab === 'server' && (
+                    <div className="space-y-4" data-testid="admin-panel-server">
+                      <div>
+                        <h3 className="font-semibold text-navy mb-1">Server Configuration</h3>
+                        <p className="text-sm text-navy-light">Core server settings. Changes require a server restart.</p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>JWT Secret</Label>
+                        <div className="flex gap-2">
+                          <Input type="password" value={serverForm.jwt_secret} onChange={e => setServerForm({...serverForm, jwt_secret: e.target.value})} placeholder={adminConfig?.jwt_secret === '***' ? 'Currently set (hidden)' : 'Not set'} className="flex-1" data-testid="admin-jwt-secret" />
+                          <Button variant="outline" onClick={() => {
+                            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                            let s = ''; for (let i = 0; i < 32; i++) s += chars.charAt(Math.floor(Math.random() * chars.length));
+                            setServerForm({...serverForm, jwt_secret: s});
+                          }} data-testid="admin-generate-jwt-btn">
+                            <Key className="w-4 h-4 mr-1" /> Generate
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>CORS Origins</Label>
+                        <Input value={serverForm.cors_origins} onChange={e => setServerForm({...serverForm, cors_origins: e.target.value})} data-testid="admin-cors" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Database Name</Label>
+                        <Input value={serverForm.db_name} onChange={e => setServerForm({...serverForm, db_name: e.target.value})} data-testid="admin-db-name" />
+                      </div>
+                      <Button onClick={() => handleAdminSave('server', serverForm)} disabled={adminLoading} data-testid="admin-save-server-btn">
+                        <Save className="w-4 h-4 mr-1" /> Save Server Settings
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Logs */}
+                  {adminTab === 'logs' && (
+                    <div className="space-y-4" data-testid="admin-panel-logs">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-navy">Server Logs</h3>
+                        <Button variant="outline" size="sm" onClick={() => handleFetchLogs()} data-testid="admin-refresh-logs-btn">
+                          <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+                        </Button>
+                      </div>
+                      <div className="flex gap-2">
+                        {['backend', 'frontend', 'error'].map(t => (
+                          <Button key={t} variant="outline" size="sm" onClick={() => handleFetchLogs(t)} className="capitalize" data-testid={`admin-logs-${t}-btn`}>
+                            {t}
+                          </Button>
+                        ))}
+                      </div>
+                      <pre className="bg-gray-900 text-green-400 p-4 rounded-lg text-xs overflow-auto max-h-80 font-mono" data-testid="admin-logs-content">
+                        {adminLogs || 'Click a button above to load logs...'}
+                      </pre>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
