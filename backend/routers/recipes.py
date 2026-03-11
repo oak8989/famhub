@@ -257,9 +257,14 @@ async def import_recipe_from_url(req: ImportURLRequest, user: dict = Depends(get
     else:
         recipe_data = fallback_scrape(soup, url)
 
-    # If no useful data was extracted, let the user know
-    if not recipe_data.get('ingredients') and not recipe_data.get('instructions'):
-        recipe_data['_warning'] = 'Could not extract recipe details. This site may use JavaScript rendering. You can fill in the details manually.'
+    # If no useful data was extracted, return error instead of blank form
+    has_name = recipe_data.get('name') and recipe_data['name'] != 'Imported Recipe'
+    has_content = recipe_data.get('ingredients') or recipe_data.get('instructions')
+    if not has_name and not has_content:
+        raise HTTPException(
+            status_code=422,
+            detail="Could not extract recipe data from this URL. The site may require JavaScript or block scraping. Try BBC Good Food, Food.com, or NYT Cooking."
+        )
 
     recipe_data['source_url'] = url
     return recipe_data
