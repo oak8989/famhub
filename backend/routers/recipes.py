@@ -163,12 +163,14 @@ def parse_recipe_data(json_ld):
     if isinstance(category, list):
         category = category[0] if category else 'Main Course'
 
-    # Image
+    # Image - handle all possible formats
     image = json_ld.get('image', '')
     if isinstance(image, list):
         image = image[0] if image else ''
-    elif isinstance(image, dict):
-        image = image.get('url', '')
+    if isinstance(image, dict):
+        image = image.get('url', image.get('contentUrl', ''))
+    if not isinstance(image, str):
+        image = str(image) if image else ''
 
     return {
         'name': name,
