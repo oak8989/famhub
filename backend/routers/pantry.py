@@ -4,6 +4,7 @@ from models.schemas import PantryItem
 from auth import get_current_user
 from database import db
 import requests
+import uuid
 
 router = APIRouter(prefix="/api/pantry", tags=["pantry"])
 
@@ -85,3 +86,22 @@ async def lookup_barcode(barcode: str):
         pass
 
     return {"found": False, "barcode": barcode}
+
+
+@router.post("/bulk-add")
+async def bulk_add_pantry_items(items: List[PantryItem], user: dict = Depends(get_current_user)):
+    if not items:
+        return {"message": "No items to add", "count": 0}
+    docs = []
+    for item in items:
+        item_doc = item.model_dump()
+        if not item_doc.get("id"):
+            item_doc["id"] = str(uuid.uuid4())
+        item_doc["family_id"] = user["family_id"]
+        docs.append(item_doc)
+    await db.pantry_items.insert_many(docs)
+    # Remove MongoDB _id and family_id from response
+    for d in docs:
+        d.pop("_id", None)
+        d.pop("family_id", None)
+    return {"message": f"{len(docs)} items added", "count": len(docs), "items": docs}

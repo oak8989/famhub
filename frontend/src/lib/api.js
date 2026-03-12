@@ -198,6 +198,7 @@ export const pantryAPI = {
   updateItem: (id, data) => api.put(`/pantry/${id}`, data),
   deleteItem: (id) => api.delete(`/pantry/${id}`),
   lookupBarcode: (barcode) => api.get(`/pantry/barcode/${barcode}`),
+  bulkAdd: (items) => api.post('/pantry/bulk-add', items),
 };
 
 // Meal Suggestions

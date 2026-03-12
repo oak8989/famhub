@@ -12,7 +12,7 @@ const categories = ['General', 'Produce', 'Dairy', 'Meat', 'Bakery', 'Frozen', '
 const ShoppingPage = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newItem, setNewItem] = useState({ name: '', quantity: '1', category: 'General' });
+  const [newItem, setNewItem] = useState({ name: '', quantity: '', category: 'General' });
 
   useEffect(() => {
     loadItems();
@@ -34,7 +34,7 @@ const ShoppingPage = () => {
 
     try {
       await shoppingAPI.createItem(newItem);
-      setNewItem({ name: '', quantity: '1', category: 'General' });
+      setNewItem({ name: '', quantity: '', category: 'General' });
       loadItems();
       toast.success('Item added!');
     } catch (error) {
@@ -120,7 +120,7 @@ const ShoppingPage = () => {
           <Input
             value={newItem.quantity}
             onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
-            placeholder="Qty"
+            placeholder="0"
             className="input-cozy w-20"
             data-testid="shopping-quantity-input"
           />

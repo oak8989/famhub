@@ -9,7 +9,7 @@ import { Checkbox } from '../components/ui/checkbox';
 const GroceryPage = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newItem, setNewItem] = useState({ name: '', quantity: '1' });
+  const [newItem, setNewItem] = useState({ name: '', quantity: '' });
 
   useEffect(() => {
     loadItems();
@@ -31,7 +31,7 @@ const GroceryPage = () => {
 
     try {
       await groceryAPI.createItem(newItem);
-      setNewItem({ name: '', quantity: '1' });
+      setNewItem({ name: '', quantity: '' });
       loadItems();
       toast.success('Added!');
     } catch (error) {
@@ -93,7 +93,7 @@ const GroceryPage = () => {
           <Input
             value={newItem.quantity}
             onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
-            placeholder="Qty"
+            placeholder="0"
             className="input-cozy w-20"
             data-testid="grocery-quantity"
           />

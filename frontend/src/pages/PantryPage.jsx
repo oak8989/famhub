@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Package, Plus, Trash2, Edit2, Scan, X, AlertTriangle, Camera, Loader2, ExternalLink } from 'lucide-react';
+import { Package, Plus, Trash2, Edit2, Scan, X, AlertTriangle, Camera, Loader2, ExternalLink, ListPlus, Check, Minus } from 'lucide-react';
 import { pantryAPI } from '../lib/api';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
@@ -23,7 +23,7 @@ const PantryPage = () => {
   const [form, setForm] = useState({
     name: '',
     barcode: '',
-    quantity: 1,
+    quantity: '',
     unit: 'pcs',
     category: 'Other',
     expiry_date: ''
@@ -31,12 +31,25 @@ const PantryPage = () => {
 
   const videoRef = useRef(null);
   const codeReaderRef = useRef(null);
+  const bulkVideoRef = useRef(null);
+  const bulkCodeReaderRef = useRef(null);
+  const recentScansRef = useRef(new Set());
+
+  // Bulk scanning state
+  const [bulkScanMode, setBulkScanMode] = useState(false);
+  const [bulkItems, setBulkItems] = useState([]);
+  const [bulkScannerActive, setBulkScannerActive] = useState(false);
+  const [bulkLookingUp, setBulkLookingUp] = useState(false);
+  const [savingBulk, setSavingBulk] = useState(false);
 
   useEffect(() => {
     loadItems();
     return () => {
       if (codeReaderRef.current) {
         codeReaderRef.current.reset();
+      }
+      if (bulkCodeReaderRef.current) {
+        bulkCodeReaderRef.current.reset();
       }
     };
   }, []);
@@ -57,12 +70,13 @@ const PantryPage = () => {
       toast.error('Please enter an item name');
       return;
     }
+    const submitData = { ...form, quantity: form.quantity === '' ? 1 : form.quantity };
     try {
       if (editingItem) {
-        await pantryAPI.updateItem(editingItem.id, { ...form, id: editingItem.id });
+        await pantryAPI.updateItem(editingItem.id, { ...submitData, id: editingItem.id });
         toast.success('Item updated!');
       } else {
-        await pantryAPI.createItem(form);
+        await pantryAPI.createItem(submitData);
         toast.success('Item added!');
       }
       setDialogOpen(false);
@@ -89,7 +103,7 @@ const PantryPage = () => {
     setForm({
       name: '',
       barcode: '',
-      quantity: 1,
+      quantity: '',
       unit: 'pcs',
       category: 'Other',
       expiry_date: ''
@@ -205,6 +219,134 @@ const PantryPage = () => {
     setScannerOpen(false);
   }, []);
 
+  // Bulk scanning functions
+  const startBulkScan = useCallback(() => {
+    setBulkScanMode(true);
+    setBulkItems([]);
+    recentScansRef.current = new Set();
+    // Auto-start the scanner
+    setTimeout(() => startBulkScanner(), 100);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const startBulkScanner = useCallback(async () => {
+    setBulkScannerActive(true);
+    try {
+      const codeReader = new BrowserMultiFormatReader();
+      bulkCodeReaderRef.current = codeReader;
+      const videoInputDevices = await codeReader.listVideoInputDevices();
+      if (videoInputDevices.length === 0) {
+        toast.error('No camera found');
+        setBulkScannerActive(false);
+        return;
+      }
+      const selectedDevice = videoInputDevices.find(device =>
+        device.label.toLowerCase().includes('back') ||
+        device.label.toLowerCase().includes('rear')
+      ) || videoInputDevices[0];
+
+      await codeReader.decodeFromVideoDevice(
+        selectedDevice.deviceId,
+        bulkVideoRef.current,
+        async (result) => {
+          if (result) {
+            const barcode = result.getText();
+            // Skip if we recently scanned this barcode
+            if (recentScansRef.current.has(barcode)) return;
+            recentScansRef.current.add(barcode);
+            // Clear from recent after 5 seconds to allow re-scanning
+            setTimeout(() => recentScansRef.current.delete(barcode), 5000);
+
+            setBulkLookingUp(true);
+            try {
+              const response = await pantryAPI.lookupBarcode(barcode);
+              const data = response.data;
+              const newItem = {
+                _tempId: Date.now() + '_' + barcode,
+                name: data.found ? (data.name || 'Unknown Product') : '',
+                barcode: barcode,
+                quantity: 1,
+                unit: 'pcs',
+                category: data.found ? mapCategory(data.category) : 'Other',
+                expiry_date: '',
+                found: data.found,
+                brand: data.found ? data.brand : '',
+                image: data.found ? data.image : '',
+              };
+              setBulkItems(prev => [newItem, ...prev]);
+              toast.success(data.found ? `Found: ${data.name}` : `Scanned: ${barcode}`);
+            } catch {
+              const newItem = {
+                _tempId: Date.now() + '_' + barcode,
+                name: '',
+                barcode: barcode,
+                quantity: 1,
+                unit: 'pcs',
+                category: 'Other',
+                expiry_date: '',
+                found: false,
+              };
+              setBulkItems(prev => [newItem, ...prev]);
+              toast.info(`Scanned: ${barcode} — enter name manually`);
+            }
+            setBulkLookingUp(false);
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Bulk scanner error:', error);
+      toast.error('Failed to start scanner. Check camera permissions.');
+      setBulkScannerActive(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const stopBulkScanner = useCallback(() => {
+    if (bulkCodeReaderRef.current) {
+      bulkCodeReaderRef.current.reset();
+    }
+    setBulkScannerActive(false);
+  }, []);
+
+  const closeBulkScan = useCallback(() => {
+    stopBulkScanner();
+    setBulkScanMode(false);
+    setBulkItems([]);
+    recentScansRef.current = new Set();
+  }, [stopBulkScanner]);
+
+  const updateBulkItem = (tempId, field, value) => {
+    setBulkItems(prev => prev.map(item =>
+      item._tempId === tempId ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const removeBulkItem = (tempId) => {
+    setBulkItems(prev => prev.filter(item => item._tempId !== tempId));
+  };
+
+  const saveBulkItems = async () => {
+    const validItems = bulkItems.filter(item => item.name.trim());
+    if (validItems.length === 0) {
+      toast.error('No items with names to save. Please enter names for scanned items.');
+      return;
+    }
+    setSavingBulk(true);
+    try {
+      const itemsToSave = validItems.map(({ _tempId, found, brand, image, ...item }) => ({
+        ...item,
+        quantity: item.quantity || 1,
+      }));
+      const response = await pantryAPI.bulkAdd(itemsToSave);
+      toast.success(`${response.data.count} items added to pantry!`);
+      closeBulkScan();
+      loadItems();
+    } catch (error) {
+      toast.error('Failed to save items');
+    }
+    setSavingBulk(false);
+  };
+
   const filteredItems = filterCategory === 'all'
     ? items
     : items.filter(i => i.category === filterCategory);
@@ -249,6 +391,16 @@ const PantryPage = () => {
           >
             <Scan className="w-4 h-4 mr-2" />
             Scan Barcode
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={startBulkScan}
+            className="border-teal-400 text-teal-600 hover:bg-teal-50 w-full sm:w-auto"
+            data-testid="bulk-scan-btn"
+          >
+            <ListPlus className="w-4 h-4 mr-2" />
+            Bulk Scan
           </Button>
 
           <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
@@ -322,9 +474,10 @@ const PantryPage = () => {
                     <label className="block text-sm font-medium text-navy mb-2">Quantity</label>
                     <Input
                       type="number"
-                      min="1"
+                      min="0"
                       value={form.quantity}
-                      onChange={(e) => setForm({ ...form, quantity: parseInt(e.target.value) || 1 })}
+                      onChange={(e) => setForm({ ...form, quantity: e.target.value === '' ? '' : parseInt(e.target.value) || 0 })}
+                      placeholder="0"
                       className="input-cozy"
                       data-testid="pantry-quantity-input"
                     />
@@ -550,6 +703,194 @@ const PantryPage = () => {
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Bulk Scan Mode */}
+      {bulkScanMode && (
+        <div className="fixed inset-0 z-50 bg-warm-white flex flex-col" data-testid="bulk-scan-mode">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-amber-200 bg-amber-50">
+            <h2 className="font-heading font-bold text-navy flex items-center gap-2">
+              <ListPlus className="w-5 h-5 text-teal-500" />
+              Bulk Scan
+              {bulkItems.length > 0 && (
+                <span className="text-sm font-normal bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full">
+                  {bulkItems.length} scanned
+                </span>
+              )}
+            </h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={closeBulkScan}
+              className="text-navy"
+              data-testid="close-bulk-scan-btn"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {/* Scanner Area */}
+          <div className="p-4">
+            {bulkScannerActive ? (
+              <div className="relative">
+                <div className="scanner-viewport bg-navy/10 rounded-2xl max-h-48 overflow-hidden">
+                  <video
+                    ref={bulkVideoRef}
+                    className="w-full h-full object-cover rounded-2xl"
+                  />
+                  <div className="scanner-line" />
+                </div>
+                {bulkLookingUp && (
+                  <div className="absolute top-2 right-2 bg-white/90 rounded-lg px-3 py-1 flex items-center gap-2 shadow">
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                    <span className="text-xs text-navy">Looking up...</span>
+                  </div>
+                )}
+                <div className="flex gap-2 mt-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={stopBulkScanner}
+                    className="flex-1 border-amber-400 text-amber-600"
+                    data-testid="pause-bulk-scanner-btn"
+                  >
+                    <Camera className="w-4 h-4 mr-1" />
+                    Pause Camera
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={startBulkScanner}
+                className="w-full border-amber-400 text-amber-600 hover:bg-amber-50"
+                data-testid="resume-bulk-scanner-btn"
+              >
+                <Camera className="w-4 h-4 mr-2" />
+                {bulkItems.length > 0 ? 'Resume Scanner' : 'Start Scanner'}
+              </Button>
+            )}
+          </div>
+
+          {/* Scanned Items List */}
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
+            {bulkItems.length === 0 ? (
+              <div className="text-center py-8 text-navy-light">
+                <Scan className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Scan barcodes to add items here</p>
+                <p className="text-xs mt-1 opacity-60">Items will appear as you scan them</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {bulkItems.map((item) => (
+                  <div
+                    key={item._tempId}
+                    className={`p-3 rounded-xl border ${item.found ? 'border-green-200 bg-green-50/50' : 'border-amber-200 bg-amber-50/50'}`}
+                    data-testid={`bulk-item-${item._tempId}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {item.image && (
+                        <img src={item.image} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                      )}
+                      <div className="flex-1 space-y-2">
+                        <Input
+                          value={item.name}
+                          onChange={(e) => updateBulkItem(item._tempId, 'name', e.target.value)}
+                          placeholder="Enter item name..."
+                          className="input-cozy text-sm h-9"
+                          data-testid={`bulk-item-name-${item._tempId}`}
+                        />
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7 border-gray-300"
+                              onClick={() => updateBulkItem(item._tempId, 'quantity', Math.max(1, (item.quantity || 1) - 1))}
+                              data-testid={`bulk-item-minus-${item._tempId}`}
+                            >
+                              <Minus className="w-3 h-3" />
+                            </Button>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => updateBulkItem(item._tempId, 'quantity', parseInt(e.target.value) || 1)}
+                              className="input-cozy text-center text-sm h-7 w-14"
+                              data-testid={`bulk-item-qty-${item._tempId}`}
+                            />
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7 border-gray-300"
+                              onClick={() => updateBulkItem(item._tempId, 'quantity', (item.quantity || 1) + 1)}
+                              data-testid={`bulk-item-plus-${item._tempId}`}
+                            >
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          <Select value={item.category} onValueChange={(v) => updateBulkItem(item._tempId, 'category', v)}>
+                            <SelectTrigger className="h-7 text-xs flex-1" data-testid={`bulk-item-cat-${item._tempId}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {categories.map(cat => (
+                                <SelectItem key={cat} value={cat} className="text-xs">{cat}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeBulkItem(item._tempId)}
+                            className="h-7 w-7 text-red-500 hover:bg-red-50 shrink-0"
+                            data-testid={`bulk-item-remove-${item._tempId}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-navy-light">
+                          <span className="bg-gray-100 px-2 py-0.5 rounded">{item.barcode}</span>
+                          {item.brand && <span>{item.brand}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Actions */}
+          {bulkItems.length > 0 && (
+            <div className="p-4 border-t border-amber-200 bg-amber-50/50">
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={closeBulkScan}
+                  className="flex-1 border-gray-300"
+                  data-testid="discard-bulk-btn"
+                >
+                  Discard All
+                </Button>
+                <Button
+                  onClick={saveBulkItems}
+                  disabled={savingBulk}
+                  className="flex-1 bg-teal-500 hover:bg-teal-600 text-white"
+                  data-testid="save-bulk-btn"
+                >
+                  {savingBulk ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Check className="w-4 h-4 mr-2" />
+                  )}
+                  Save {bulkItems.filter(i => i.name.trim()).length} Items
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
