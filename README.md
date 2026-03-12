@@ -58,13 +58,13 @@ Everything runs in ONE container - MongoDB included!
 
 ```bash
 docker run -d \
-  --name family-hub \
+  --name famhub \
   -p 8001:8001 \
   -p 8050:8050 \
-  -v family-hub-data:/data/db \
+  -v famhub-data:/data/db \
   -e JWT_SECRET=your-secret-key-change-me \
   -e ADMIN_PASSWORD=your-admin-password \
-  ghcr.io/oak8989/family-hub:latest
+  ghcr.io/oak8989/famhub:latest
 ```
 
 **Access at:** 
@@ -79,14 +79,14 @@ Create `docker-compose.yml`:
 version: '3.8'
 
 services:
-  family-hub:
-    image: ghcr.io/oak8989/family-hub:latest
-    container_name: family-hub
+  famhub:
+    image: ghcr.io/oak8989/famhub:latest
+    container_name: famhub
     ports:
       - "8001:8001"   # Main app
       - "8050:8050"   # Admin portal
     volumes:
-      - family-hub-data:/data/db
+      - famhub-data:/data/db
     environment:
       - JWT_SECRET=change-this-to-a-secure-random-string
       - ADMIN_PASSWORD=change-this-admin-password
@@ -99,7 +99,7 @@ services:
     restart: unless-stopped
 
 volumes:
-  family-hub-data:
+  famhub-data:
 ```
 
 ```bash
@@ -109,10 +109,10 @@ docker-compose up -d
 ### Build from Source
 
 ```bash
-git clone https://github.com/oak8989/family-hub.git
-cd family-hub
-docker build -t family-hub .
-docker run -d -p 8001:8001 -e JWT_SECRET=mysecret family-hub
+git clone https://github.com/oak8989/famhub.git
+cd famhub
+docker build -t famhub .
+docker run -d -p 8001:8001 -e JWT_SECRET=mysecret famhub
 ```
 
 ---
@@ -208,22 +208,22 @@ Data is stored in Docker volumes:
 
 | Volume | Path | Purpose |
 |--------|------|---------|
-| `family-hub-data` | `/data/db` | MongoDB database |
+| `famhub-data` | `/data/db` | MongoDB database |
 
 ### Backup
 
 ```bash
 # Create backup
 docker run --rm \
-  -v family-hub-data:/data \
+  -v famhub-data:/data \
   -v $(pwd):/backup \
-  alpine tar czf /backup/family-hub-backup.tar.gz /data
+  alpine tar czf /backup/famhub-backup.tar.gz /data
 
 # Restore backup
 docker run --rm \
-  -v family-hub-data:/data \
+  -v famhub-data:/data \
   -v $(pwd):/backup \
-  alpine tar xzf /backup/family-hub-backup.tar.gz -C /
+  alpine tar xzf /backup/famhub-backup.tar.gz -C /
 ```
 
 ---

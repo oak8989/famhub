@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_NAME = 'family-hub-v1';
+const CACHE_NAME = 'famhub-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

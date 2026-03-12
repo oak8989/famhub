@@ -152,7 +152,7 @@ async def export_family_data(user: dict = Depends(get_current_user)):
     return StreamingResponse(
         io.BytesIO(json_str.encode()),
         media_type="application/json",
-        headers={"Content-Disposition": f"attachment; filename=family-hub-backup-{datetime.now().strftime('%Y%m%d')}.json"}
+        headers={"Content-Disposition": f"attachment; filename=famhub-backup-{datetime.now().strftime('%Y%m%d')}.json"}
     )
 
 

@@ -31,7 +31,7 @@ FROM ubuntu:22.04
 
 LABEL org.opencontainers.image.title="Family Hub"
 LABEL org.opencontainers.image.description="Self-contained family organization app"
-LABEL org.opencontainers.image.source="https://github.com/oak8989/family-hub"
+LABEL org.opencontainers.image.source="https://github.com/oak8989/famhub"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # Prevent interactive prompts

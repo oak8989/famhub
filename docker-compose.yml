@@ -14,14 +14,14 @@
 version: '3.8'
 
 services:
-  family-hub:
-    image: ghcr.io/oak8989/family-hub:latest
-    container_name: family-hub
+  famhub:
+    image: ghcr.io/oak8989/famhub:latest
+    container_name: famhub
     ports:
       - "8001:8001"
     volumes:
       # Database persistence - DO NOT REMOVE
-      - family-hub-data:/data/db
+      - famhub-data:/data/db
     environment:
       # ===========================================
       # REQUIRED: Change this to a secure secret!
@@ -55,5 +55,5 @@ services:
       start_period: 60s
 
 volumes:
-  family-hub-data:
-    name: family-hub-data
+  famhub-data:
+    name: famhub-data

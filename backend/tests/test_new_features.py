@@ -68,7 +68,7 @@ class TestQRCodeGeneration:
     
     def test_qr_code_base64_endpoint(self, api_client):
         """Test QR code base64 generation"""
-        test_url = "https://example.com/family-hub"
+        test_url = "https://example.com/famhub"
         response = api_client.get(f"{BASE_URL}/api/qr-code/base64?url={test_url}")
         
         assert response.status_code == 200
