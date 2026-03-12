@@ -14,7 +14,7 @@ import { Progress } from '../components/ui/progress';
 import { toast } from 'sonner';
 import { 
   Award, Plus, Check, Trash2, Gift, Trophy, Star, 
-  Calendar, User, Sparkles, Crown
+  Calendar, User, Sparkles, Crown, History
 } from 'lucide-react';
 import api from '../lib/api';
 
@@ -30,12 +30,20 @@ const DIFFICULTY_POINTS = {
   hard: 20,
 };
 
+const formatClaimDate = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${String(d.getDate()).padStart(2,'0')}${months[d.getMonth()]}${d.getFullYear()}`;
+};
+
 const ChoresPage = () => {
   const { user } = useAuth();
   const [chores, setChores] = useState([]);
   const [rewards, setRewards] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [members, setMembers] = useState([]);
+  const [claimHistory, setClaimHistory] = useState([]);
   const [choreOpen, setChoreOpen] = useState(false);
   const [rewardOpen, setRewardOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -63,16 +71,18 @@ const ChoresPage = () => {
 
   const loadData = async () => {
     try {
-      const [choresRes, rewardsRes, leaderboardRes, membersRes] = await Promise.all([
+      const [choresRes, rewardsRes, leaderboardRes, membersRes, claimsRes] = await Promise.all([
         api.get('/chores'),
         api.get('/rewards'),
         api.get('/leaderboard'),
         api.get('/family/members'),
+        api.get('/reward-claims'),
       ]);
       setChores(choresRes.data || []);
       setRewards(rewardsRes.data || []);
       setLeaderboard(leaderboardRes.data || []);
       setMembers(membersRes.data || []);
+      setClaimHistory(claimsRes.data || []);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -344,6 +354,9 @@ const ChoresPage = () => {
           <TabsTrigger value="leaderboard" className="data-[state=active]:bg-terracotta data-[state=active]:text-white">
             Leaderboard
           </TabsTrigger>
+          <TabsTrigger value="history" className="data-[state=active]:bg-terracotta data-[state=active]:text-white">
+            History
+          </TabsTrigger>
         </TabsList>
 
         {/* Chores Tab */}
@@ -511,6 +524,44 @@ const ChoresPage = () => {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* History Tab - Claimed Rewards */}
+        <TabsContent value="history" className="space-y-4" data-testid="claims-history-tab">
+          <Card className="card-base">
+            <CardHeader>
+              <CardTitle className="text-navy flex items-center gap-2">
+                <History className="w-5 h-5 text-terracotta" /> Claimed Rewards
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {claimHistory.length === 0 ? (
+                <p className="text-center text-navy-light py-6">No rewards claimed yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {claimHistory.map((claim, i) => (
+                    <div key={claim.id || i} className="flex items-center justify-between p-3 bg-cream dark:bg-gray-700/50 rounded-xl" data-testid={`claim-row-${i}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+                          <Gift className="w-4 h-4 text-amber-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-navy dark:text-gray-200 text-sm">{claim.reward_name}</p>
+                          <p className="text-xs text-navy-light dark:text-gray-400">
+                            Claimed by <span className="font-semibold">{claim.user_name}</span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-terracotta">{claim.points_spent} pts</p>
+                        <p className="text-xs text-navy-light dark:text-gray-400">{formatClaimDate(claim.claimed_at)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

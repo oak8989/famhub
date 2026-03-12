@@ -127,6 +127,24 @@ async def claim_reward(claim: RewardClaim, user: dict = Depends(get_current_user
     return {"message": "Reward claimed", "points_spent": reward["points_required"]}
 
 
+@router.get("/reward-claims")
+async def get_reward_claims(user: dict = Depends(get_current_user)):
+    claims = await db.reward_claims.find(
+        {"family_id": user["family_id"]}, {"_id": 0}
+    ).sort("claimed_at", -1).to_list(200)
+    user_ids = list({c["user_id"] for c in claims})
+    users = {}
+    if user_ids:
+        user_docs = await db.users.find({"id": {"$in": user_ids}}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+        users = {u["id"]: u["name"] for u in user_docs}
+    for c in claims:
+        c["user_name"] = users.get(c["user_id"], "Unknown")
+        c.pop("family_id", None)
+    return claims
+
+
+
+
 @router.get("/leaderboard")
 async def get_leaderboard(user: dict = Depends(get_current_user)):
     members = await db.users.find(

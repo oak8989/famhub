@@ -135,6 +135,7 @@ export const choresAPI = {
   claimReward: (data) => api.post('/rewards/claim', data),
   deleteReward: (id) => api.delete(`/rewards/${id}`),
   getLeaderboard: () => api.get('/leaderboard'),
+  getRewardClaims: () => api.get('/reward-claims'),
 };
 
 // Notes
