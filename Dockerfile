@@ -97,29 +97,27 @@ autostart=true\n\
 autorestart=true\n\
 stdout_logfile=/var/log/supervisor/familyhub.log\n\
 stderr_logfile=/var/log/supervisor/familyhub_err.log\n\
-environment=MONGO_URL="%(ENV_MONGO_URL)s",DB_NAME="%(ENV_DB_NAME)s",CORS_ORIGINS="%(ENV_CORS_ORIGINS)s",OPENAI_API_KEY="%(ENV_OPENAI_API_KEY)s",JWT_SECRET="%(ENV_JWT_SECRET)s",SMTP_HOST="%(ENV_SMTP_HOST)s",SMTP_PORT="%(ENV_SMTP_PORT)s",SMTP_USER="%(ENV_SMTP_USER)s",SMTP_PASSWORD="%(ENV_SMTP_PASSWORD)s",SMTP_FROM="%(ENV_SMTP_FROM)s",GOOGLE_CLIENT_ID="%(ENV_GOOGLE_CLIENT_ID)s",GOOGLE_CLIENT_SECRET="%(ENV_GOOGLE_CLIENT_SECRET)s",GOOGLE_REDIRECT_URI="%(ENV_GOOGLE_REDIRECT_URI)s",VAPID_PRIVATE_KEY="%(ENV_VAPID_PRIVATE_KEY)s",VAPID_PUBLIC_KEY="%(ENV_VAPID_PUBLIC_KEY)s",VAPID_EMAIL="%(ENV_VAPID_EMAIL)s"\n\
+environment=MONGO_URL="%(ENV_MONGO_URL)s",DB_NAME="%(ENV_DB_NAME)s",CORS_ORIGINS="%(ENV_CORS_ORIGINS)s",OPENAI_API_KEY="%(ENV_OPENAI_API_KEY)s",JWT_SECRET="%(ENV_JWT_SECRET)s",SMTP_HOST="%(ENV_SMTP_HOST)s",SMTP_PORT="%(ENV_SMTP_PORT)s",SMTP_USER="%(ENV_SMTP_USER)s",SMTP_PASSWORD="%(ENV_SMTP_PASSWORD)s",SMTP_FROM="%(ENV_SMTP_FROM)s",GOOGLE_CLIENT_ID="%(ENV_GOOGLE_CLIENT_ID)s",GOOGLE_CLIENT_SECRET="%(ENV_GOOGLE_CLIENT_SECRET)s",GOOGLE_REDIRECT_URI="%(ENV_GOOGLE_REDIRECT_URI)s",VAPID_PRIVATE_KEY="%(ENV_VAPID_PRIVATE_KEY)s",VAPID_PUBLIC_KEY="%(ENV_VAPID_PUBLIC_KEY)s",VAPID_EMAIL="%(ENV_VAPID_EMAIL)s",SERVER_URL="%(ENV_SERVER_URL)s"\n\
 priority=2\n\
 startsecs=5\n\
 startretries=3\n\
 ' > /etc/supervisor/conf.d/familyhub.conf
 
-# Environment variables
+# Only non-sensitive config as ENV. All secrets (JWT_SECRET, SMTP_PASSWORD,
+# OPENAI_API_KEY, GOOGLE_CLIENT_SECRET, VAPID_PRIVATE_KEY) must be passed
+# at runtime via: docker run --env-file .env ... or -e KEY=value
 ENV MONGO_URL=mongodb://localhost:27017 \
     DB_NAME=family_hub \
     CORS_ORIGINS=* \
-    OPENAI_API_KEY="" \
-    JWT_SECRET=family-hub-secret-change-me \
     SMTP_HOST="" \
     SMTP_PORT=587 \
     SMTP_USER="" \
-    SMTP_PASSWORD="" \
     SMTP_FROM="" \
     GOOGLE_CLIENT_ID="" \
-    GOOGLE_CLIENT_SECRET="" \
     GOOGLE_REDIRECT_URI="" \
-    VAPID_PRIVATE_KEY="" \
     VAPID_PUBLIC_KEY="" \
-    VAPID_EMAIL="mailto:admin@familyhub.local" \
+    VAPID_EMAIL="" \
+    SERVER_URL="" \
     PORT=8001
 
 # Expose port (8001 = app)
