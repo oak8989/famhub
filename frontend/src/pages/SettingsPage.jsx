@@ -84,7 +84,7 @@ const SettingsPage = () => {
   const [smtpForm, setSmtpForm] = useState({ smtp_host: '', smtp_port: 587, smtp_user: '', smtp_password: '', smtp_from: '' });
   const [googleForm, setGoogleForm] = useState({ google_client_id: '', google_client_secret: '', google_redirect_uri: '' });
   const [openaiForm, setOpenaiForm] = useState({ openai_api_key: '' });
-  const [serverForm, setServerForm] = useState({ jwt_secret: '', cors_origins: '*', db_name: 'family_hub' });
+  const [serverForm, setServerForm] = useState({ jwt_secret: '', cors_origins: '*', db_name: 'family_hub', server_url: '' });
 
   const isAdmin = user?.role === 'owner' || user?.role === 'parent';
   const isOwner = user?.role === 'owner';
@@ -136,7 +136,7 @@ const SettingsPage = () => {
       setSmtpForm({ smtp_host: c.smtp_host || '', smtp_port: c.smtp_port || 587, smtp_user: c.smtp_user || '', smtp_password: '', smtp_from: c.smtp_from || '' });
       setGoogleForm({ google_client_id: c.google_client_id || '', google_client_secret: '', google_redirect_uri: c.google_redirect_uri || '' });
       setOpenaiForm({ openai_api_key: '' });
-      setServerForm({ jwt_secret: '', cors_origins: c.cors_origins || '*', db_name: c.db_name || 'family_hub' });
+      setServerForm({ jwt_secret: '', cors_origins: c.cors_origins || '*', db_name: c.db_name || 'family_hub', server_url: c.server_url || '' });
     } catch (error) {
       console.error('Failed to load admin data:', error);
     }
@@ -1022,6 +1022,16 @@ const SettingsPage = () => {
                       <div>
                         <h3 className="font-semibold text-navy mb-1">Server Configuration</h3>
                         <p className="text-sm text-navy-light">Core server settings. Changes require a server restart.</p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Server URL (Public-facing)</Label>
+                        <Input
+                          value={serverForm.server_url}
+                          onChange={e => setServerForm({...serverForm, server_url: e.target.value})}
+                          placeholder="https://familyhub.yourdomain.com"
+                          data-testid="admin-server-url"
+                        />
+                        <p className="text-xs text-navy-light">Required for password reset emails and invite links. Include https://</p>
                       </div>
                       <div className="space-y-1.5">
                         <Label>JWT Secret</Label>

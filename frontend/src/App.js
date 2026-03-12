@@ -18,6 +18,7 @@ import PantryPage from './pages/PantryPage';
 import SuggestionsPage from './pages/SuggestionsPage';
 import ChoresPage from './pages/ChoresPage';
 import SettingsPage from './pages/SettingsPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -45,6 +46,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <AuthPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
       <Route path="/calendar" element={<ProtectedRoute><Layout><CalendarPage /></Layout></ProtectedRoute>} />
       <Route path="/shopping" element={<ProtectedRoute><Layout><ShoppingPage /></Layout></ProtectedRoute>} />

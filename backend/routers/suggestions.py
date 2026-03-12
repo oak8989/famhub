@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
-from auth import get_current_user, EMERGENT_LLM_KEY, OPENAI_API_KEY
+from auth import get_current_user
 from database import db
+import os
 import uuid
 import json
 import logging
@@ -110,10 +111,10 @@ Pantry items: {', '.join(pantry_names)}"""
 
     prompt += "\n\nFocus on meals that use mostly what's available. Mark ingredients as \"(have)\" if they're in the pantry, \"(need)\" if they need to be bought."
 
-    if EMERGENT_AVAILABLE and EMERGENT_LLM_KEY:
+    if EMERGENT_AVAILABLE and os.environ.get('EMERGENT_LLM_KEY'):
         try:
             chat = LlmChat(
-                api_key=EMERGENT_LLM_KEY,
+                api_key=os.environ.get('EMERGENT_LLM_KEY'),
                 session_id=f"meal-suggestion-{user['family_id']}-{uuid.uuid4()}",
                 system_message=AI_SYSTEM_PROMPT
             ).with_model("openai", "gpt-4o-mini")
@@ -123,9 +124,9 @@ Pantry items: {', '.join(pantry_names)}"""
         except Exception as e:
             logger.error(f"Emergent AI error: {e}")
 
-    if OPENAI_AVAILABLE and OPENAI_API_KEY:
+    if OPENAI_AVAILABLE and os.environ.get('OPENAI_API_KEY'):
         try:
-            client = OpenAI(api_key=OPENAI_API_KEY)
+            client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
@@ -139,6 +140,6 @@ Pantry items: {', '.join(pantry_names)}"""
             logger.error(f"OpenAI error: {e}")
             return {"suggestions": [], "message": f"AI service error: {str(e)}"}
 
-    if not EMERGENT_LLM_KEY and not OPENAI_API_KEY:
+    if not os.environ.get('EMERGENT_LLM_KEY') and not os.environ.get('OPENAI_API_KEY'):
         return {"suggestions": [], "message": "AI not configured. Add OPENAI_API_KEY to enable AI meal suggestions."}
     return {"suggestions": [], "message": "AI service unavailable. Please try again later."}

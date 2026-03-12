@@ -2,17 +2,33 @@ from fastapi import APIRouter, HTTPException, Depends
 from models.schemas import UserCreate, UserLogin, FamilyPinLogin, ChangePassword, ResetMemberPassword
 from auth import (
     get_current_user, hash_password, verify_password, create_token,
-    generate_pin, generate_user_pin, DEFAULT_FAMILY_SETTINGS
+    generate_pin, generate_user_pin, DEFAULT_FAMILY_SETTINGS,
+    generate_reset_token, verify_reset_token, send_email
 )
 from database import db
 from datetime import datetime, timezone
+from collections import defaultdict
+import time
 import uuid
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+# Simple in-memory rate limiter
+_rate_limit = defaultdict(list)
+RATE_LIMIT_WINDOW = 300  # 5 minutes
+RATE_LIMIT_MAX = 10  # max attempts per window
+
+def _check_rate_limit(key: str):
+    now = time.time()
+    _rate_limit[key] = [t for t in _rate_limit[key] if now - t < RATE_LIMIT_WINDOW]
+    if len(_rate_limit[key]) >= RATE_LIMIT_MAX:
+        raise HTTPException(status_code=429, detail="Too many attempts. Please try again later.")
+    _rate_limit[key].append(now)
+
 
 @router.post("/register")
 async def register(user: UserCreate):
+    _check_rate_limit(f"register:{user.email}")
     existing = await db.users.find_one({"email": user.email}, {"_id": 0})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -66,6 +82,7 @@ async def register(user: UserCreate):
 
 @router.post("/login")
 async def login(credentials: UserLogin):
+    _check_rate_limit(f"login:{credentials.email}")
     user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
     if not user or not verify_password(credentials.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -135,3 +152,56 @@ async def reset_member_password(data: ResetMemberPassword, user: dict = Depends(
         {"$set": {"password": hash_password(temp_password)}}
     )
     return {"message": f"Password reset for {target['name']}", "temp_password": temp_password}
+
+
+@router.post("/forgot-password")
+async def forgot_password(data: dict):
+    email = data.get("email", "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    _check_rate_limit(f"forgot:{email}")
+    # Always return success to prevent email enumeration
+    user = await db.users.find_one({"email": email}, {"_id": 0})
+    if user:
+        import os
+        server_url = os.environ.get("SERVER_URL", "").rstrip("/")
+        if not server_url:
+            raise HTTPException(status_code=400, detail="Server URL not configured. Ask the hub owner to set it in Server settings.")
+        token = generate_reset_token(email)
+        reset_link = f"{server_url}/reset-password?token={token}"
+        html = f"""
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+            <h2 style="color: #2D3748;">Family Hub - Password Reset</h2>
+            <p>Hi {user.get('name', 'there')},</p>
+            <p>We received a request to reset your password. Click the button below to choose a new one:</p>
+            <div style="text-align: center; margin: 32px 0;">
+                <a href="{reset_link}" style="background-color: #E07A5F; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+                    Reset Password
+                </a>
+            </div>
+            <p style="color: #718096; font-size: 14px;">This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>
+        </div>
+        """
+        await send_email(email, "Family Hub - Password Reset", html)
+    return {"message": "If an account with that email exists, a reset link has been sent."}
+
+
+@router.post("/reset-password-token")
+async def reset_password_with_token(data: dict):
+    token = data.get("token", "")
+    new_password = data.get("new_password", "")
+    if not token or not new_password:
+        raise HTTPException(status_code=400, detail="Token and new password are required")
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    email = verify_reset_token(token)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link. Please request a new one.")
+    user = await db.users.find_one({"email": email}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=400, detail="Account not found")
+    await db.users.update_one(
+        {"email": email},
+        {"$set": {"password": hash_password(new_password)}}
+    )
+    return {"message": "Password has been reset successfully. You can now sign in."}

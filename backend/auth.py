@@ -1,25 +1,21 @@
 import os
 import secrets
 import string
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt
+from jose import jwt, JWTError
 import bcrypt
 import logging
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from database import db
 
-JWT_SECRET = os.environ.get('JWT_SECRET', 'family-hub-secret-key-2024')
+JWT_SECRET = os.environ.get('JWT_SECRET', secrets.token_urlsafe(32))
 JWT_ALGORITHM = "HS256"
-
-SMTP_HOST = os.environ.get('SMTP_HOST', '')
-SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
-SMTP_USER = os.environ.get('SMTP_USER', '')
-SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
-SMTP_FROM = os.environ.get('SMTP_FROM', '')
+JWT_EXPIRATION_HOURS = 72
 
 
 def get_smtp_config():
@@ -31,10 +27,6 @@ def get_smtp_config():
         'from_addr': os.environ.get('SMTP_FROM', ''),
     }
 
-GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
-GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
-GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', '')
-
 
 def get_google_config():
     return {
@@ -43,8 +35,6 @@ def get_google_config():
         'redirect_uri': os.environ.get('GOOGLE_REDIRECT_URI', ''),
     }
 
-EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer(auto_error=False)
@@ -102,7 +92,13 @@ def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
 def create_token(user_id: str, family_id: str, role: str = "member") -> str:
-    return jwt.encode({"user_id": user_id, "family_id": family_id, "role": role}, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    payload = {
+        "user_id": user_id,
+        "family_id": family_id,
+        "role": role,
+        "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     if not credentials:
@@ -110,8 +106,20 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     try:
         payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         return payload
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+def generate_reset_token(email: str) -> str:
+    s = URLSafeTimedSerializer(JWT_SECRET)
+    return s.dumps(email, salt="password-reset")
+
+def verify_reset_token(token: str, max_age: int = 3600) -> str:
+    s = URLSafeTimedSerializer(JWT_SECRET)
+    try:
+        return s.loads(token, salt="password-reset", max_age=max_age)
+    except (BadSignature, SignatureExpired):
+        return None
 
 def check_permission(user_role: str, required_permission: str) -> bool:
     role_info = ROLES.get(user_role, ROLES["child"])

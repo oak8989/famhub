@@ -1,10 +1,6 @@
 import axios from 'axios';
 
 const getApiUrl = () => {
-  const customServer = localStorage.getItem('customServerUrl');
-  if (customServer) {
-    return customServer + '/api';
-  }
   const envUrl = process.env.REACT_APP_BACKEND_URL;
   if (envUrl) {
     return envUrl + '/api';
@@ -18,30 +14,6 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
-
-export const setCustomServer = (url) => {
-  if (url) {
-    localStorage.setItem('customServerUrl', url);
-    api.defaults.baseURL = url + '/api';
-  } else {
-    localStorage.removeItem('customServerUrl');
-    const envUrl = process.env.REACT_APP_BACKEND_URL;
-    api.defaults.baseURL = envUrl ? envUrl + '/api' : '/api';
-  }
-};
-
-export const getCustomServer = () => {
-  return localStorage.getItem('customServerUrl') || '';
-};
-
-export const testServerConnection = async (url) => {
-  try {
-    const response = await axios.get(url + '/api/health', { timeout: 5000 });
-    return response.data?.status === 'healthy';
-  } catch {
-    return false;
-  }
-};
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -72,6 +44,8 @@ export const authAPI = {
   getMe: () => api.get('/auth/me'),
   changePassword: (data) => api.post('/auth/change-password', data),
   resetPassword: (userId) => api.post('/auth/reset-password', { user_id: userId }),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPasswordToken: (token, newPassword) => api.post('/auth/reset-password-token', { token, new_password: newPassword }),
 };
 
 // Family

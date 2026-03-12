@@ -57,6 +57,7 @@ class ServerConfig(BaseModel):
     jwt_secret: str = ""
     cors_origins: str = "*"
     db_name: str = "family_hub"
+    server_url: str = ""
 
 
 # --- Endpoints ---
@@ -100,6 +101,7 @@ async def get_config(user: dict = Depends(require_owner)):
         "jwt_secret": "***" if _get_env("JWT_SECRET") else "",
         "cors_origins": _get_env("CORS_ORIGINS", "*"),
         "db_name": _get_env("DB_NAME", "family_hub"),
+        "server_url": _get_env("SERVER_URL", ""),
     }
 
 
@@ -136,6 +138,8 @@ async def save_server(config: ServerConfig, user: dict = Depends(require_owner))
         _save_env("JWT_SECRET", config.jwt_secret)
     _save_env("CORS_ORIGINS", config.cors_origins)
     _save_env("DB_NAME", config.db_name)
+    if config.server_url is not None:
+        _save_env("SERVER_URL", config.server_url.rstrip("/"))
     return {"success": True, "message": "Server settings saved"}
 
 
