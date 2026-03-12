@@ -11,6 +11,7 @@ Self-hosted family organization app. Single Docker container with embedded Mongo
 - **Offline:** Service Worker (cache-first static, network-first API)
 - **Push:** Web Push Protocol via pywebpush + VAPID keys
 - **AI:** Emergent LLM (GPT-4o-mini) + OpenAI fallback
+- **Scraping:** httpx with HTTP/2 + cloudscraper fallback
 
 ## All Implemented Features
 
@@ -18,71 +19,46 @@ Self-hosted family organization app. Single Docker container with embedded Mongo
 - [x] Calendar (+ Google Calendar sync)
 - [x] Shopping List, Tasks, Notes, Grocery List, Contacts
 - [x] Budget Tracker with charts + summary
-- [x] Meal Planner, Recipe Box (+ URL import)
-- [x] Pantry (barcode scanner + web lookup)
-- [x] Chores + Rewards + Leaderboard (gamified)
+- [x] Meal Planner, Recipe Box (+ URL import from 7+ recipe sites)
+- [x] Pantry (barcode scanner + web lookup + auto-categorization)
+- [x] Chores + Rewards + Leaderboard (gamified, points working)
 
-### Real-time, Push & Offline
-- [x] WebSocket real-time updates across family
-- [x] Push notifications on ALL module changes (pywebpush + VAPID)
-- [x] Service Worker offline caching
-- [x] PWA installable
+### Recipe URL Import (httpx HTTP/2)
+- [x] BBC Good Food, NYT Cooking, Sally's Baking, Pinch of Yum, Minimalist Baker, RecipeTin Eats, Love and Lemons
+- [x] JSON-LD parser handles @type as string/list, @graph nesting, image as string/list/dict
+- [x] Returns error (not blank form) when extraction fails
+- [x] cloudscraper fallback for Cloudflare-protected sites
 
-### AI
-- [x] AI meal suggestions from pantry (prioritizes expiring items, avoids recent meals)
-- [x] Emergent LLM / OpenAI GPT-4o-mini
+### Chores & Rewards System
+- [x] Points increment on chore completion (backend verified)
+- [x] Frontend displays live points from leaderboard (not stale auth context)
+- [x] Reward creation + claiming with point deduction
+- [x] Leaderboard shows all family members with points
 
-### Data Management
-- [x] Full JSON export + CSV per module
-- [x] Data import/restore (merge mode — duplicates skipped)
-- [x] QR code for mobile setup
+### Meal → Grocery Integration
+- [x] POST /api/grocery/add-from-meal/{plan_id} — compares recipe ingredients against pantry and existing grocery
+- [x] Only adds missing items (fuzzy matching)
+- [x] Button on meal cards in MealPlanner page
 
-### UI/UX
-- [x] Dark mode toggle (persisted)
-- [x] Mobile responsive
-- [x] Role-based access (Owner > Parent > Member > Child)
+### Account Security
+- [x] Change password (current + new + confirm, 6-char minimum)
+- [x] Owner/Parent can reset member passwords (generates temp password)
+- [x] Account tab in Settings
 
 ### Admin / Server Management (Merged into Owner Settings)
-- [x] Server status dashboard (Backend, Database, SMTP, OpenAI, Google)
-- [x] SMTP email configuration + test connection
-- [x] Google Calendar API configuration
-- [x] OpenAI API key configuration
-- [x] Server config (JWT secret, CORS, DB name)
-- [x] Server log viewer (backend, frontend, error logs)
-- [x] Server restart capability
-- [x] All admin features gated to Owner role only (403 for non-owners)
+- [x] Server status dashboard, SMTP/Google/OpenAI/Server config
+- [x] Test email, log viewer, server restart
+- [x] Dynamic SMTP config (reads os.environ at call time, not stale imports)
+
+### Real-time, Push & Offline
+- [x] WebSocket, Push notifications, PWA, Dark mode
+
+### Data Management
+- [x] Full JSON export + CSV, Data import/restore, QR code
 
 ## Docker
-- Single container: MongoDB + FastAPI
-- Supervisor manages all processes
-- Backend runs from `/app/backend` directory
-- Port: 8001 (app)
-- HEALTHCHECK on `/api/health`
-
-## Code Architecture
-```
-/app/backend/
-├── server.py, database.py, auth.py
-├── models/schemas.py
-├── services/push.py
-└── routers/ (admin, auth, family, calendar, shopping, tasks, chores,
-    notes, budget, meals, recipes, grocery, contacts, pantry,
-    settings, suggestions, utilities, websocket)
-```
-
-## Key API Endpoints
-- `/api/admin/*` — Owner-only server management (status, config, logs, reboot)
-- `/api/auth/*` — Registration, login, PIN login
-- `/api/family/*` — Family CRUD, member management
-- `/api/calendar/*`, `/api/shopping/*`, etc. — Module CRUD
-- `/api/ws` — WebSocket
-- `/api/notifications/*` — Push subscriptions
-- `/api/export/*`, `/api/import/*` — Data backup/restore
-
-## Removed
-- [x] admin_portal.py (separate Flask/FastAPI admin on port 8050) — MERGED into main app
-- [x] Port 8050 exposure in Dockerfile
-- [x] Separate admin supervisor config
+- Single container: MongoDB + FastAPI, Port: 8001
+- motor 3.7.1 (compatible with pymongo 4.9+)
 
 ## Backlog
 - [ ] Recurring chores automation
