@@ -220,6 +220,12 @@ async def remove_member(member_id: str, user: dict = Depends(get_current_user)):
     if target_user.get("role") == "owner":
         raise HTTPException(status_code=403, detail="Cannot remove owner")
 
+    # If user never logged in (pending invite), fully delete them
+    if not target_user.get("last_login"):
+        await db.users.delete_one({"id": member_id})
+        return {"message": "Pending invite removed"}
+
+    # Otherwise soft-remove (clear family association)
     await db.users.update_one({"id": member_id}, {"$set": {"family_id": None}})
     return {"message": "Member removed"}
 

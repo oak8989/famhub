@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import RedirectResponse
 from typing import List
 from models.schemas import CalendarEvent
-from auth import get_current_user, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
+from auth import get_current_user, get_google_config
 from database import db
 from routers.websocket import notify_family
 from routers.utilities import send_push_to_family
@@ -54,12 +54,13 @@ async def delete_event(event_id: str, user: dict = Depends(get_current_user)):
 # Google Calendar
 @router.get("/google/auth")
 async def google_calendar_auth(user: dict = Depends(get_current_user)):
-    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
-        raise HTTPException(status_code=400, detail="Google Calendar not configured")
-    redirect_uri = GOOGLE_REDIRECT_URI or f"{os.environ.get('REACT_APP_BACKEND_URL', '')}/api/calendar/google/callback"
+    g = get_google_config()
+    if not g['client_id'] or not g['client_secret']:
+        raise HTTPException(status_code=400, detail="Google Calendar not configured. Set Google Client ID and Secret in Server settings.")
+    redirect_uri = g['redirect_uri'] or f"{os.environ.get('REACT_APP_BACKEND_URL', '')}/api/calendar/google/callback"
     auth_url = (
         f"https://accounts.google.com/o/oauth2/auth?"
-        f"client_id={GOOGLE_CLIENT_ID}&"
+        f"client_id={g['client_id']}&"
         f"redirect_uri={redirect_uri}&"
         f"response_type=code&"
         f"scope=https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email&"
@@ -72,11 +73,12 @@ async def google_calendar_auth(user: dict = Depends(get_current_user)):
 
 @router.get("/google/callback")
 async def google_calendar_callback(code: str, state: str):
-    redirect_uri = GOOGLE_REDIRECT_URI or f"{os.environ.get('REACT_APP_BACKEND_URL', '')}/api/calendar/google/callback"
+    g = get_google_config()
+    redirect_uri = g['redirect_uri'] or f"{os.environ.get('REACT_APP_BACKEND_URL', '')}/api/calendar/google/callback"
     token_resp = requests.post('https://oauth2.googleapis.com/token', data={
         'code': code,
-        'client_id': GOOGLE_CLIENT_ID,
-        'client_secret': GOOGLE_CLIENT_SECRET,
+        'client_id': g['client_id'],
+        'client_secret': g['client_secret'],
         'redirect_uri': redirect_uri,
         'grant_type': 'authorization_code'
     }).json()
@@ -88,6 +90,7 @@ async def google_calendar_callback(code: str, state: str):
 
 @router.post("/google/sync")
 async def sync_google_calendar(user: dict = Depends(get_current_user)):
+    g = get_google_config()
     user_data = await db.users.find_one({"id": user["user_id"]}, {"_id": 0})
     if not user_data.get("google_tokens"):
         raise HTTPException(status_code=400, detail="Google Calendar not connected")
@@ -96,8 +99,8 @@ async def sync_google_calendar(user: dict = Depends(get_current_user)):
         token=tokens.get('access_token'),
         refresh_token=tokens.get('refresh_token'),
         token_uri='https://oauth2.googleapis.com/token',
-        client_id=GOOGLE_CLIENT_ID,
-        client_secret=GOOGLE_CLIENT_SECRET
+        client_id=g['client_id'],
+        client_secret=g['client_secret']
     )
     if creds.expired and creds.refresh_token:
         creds.refresh(GoogleRequest())

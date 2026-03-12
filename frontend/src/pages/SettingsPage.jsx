@@ -276,10 +276,15 @@ const SettingsPage = () => {
   };
 
   const handleRemoveMember = async (memberId) => {
-    if (!window.confirm('Are you sure you want to remove this member?')) return;
+    const member = members.find(m => m.id === memberId);
+    const isPending = member && !member.last_login;
+    const msg = isPending
+      ? `Remove pending invite for ${member?.name}? Their account will be deleted.`
+      : `Remove ${member?.name} from the family?`;
+    if (!window.confirm(msg)) return;
     try {
-      await api.delete(`/family/members/${memberId}`);
-      toast.success('Member removed');
+      const res = await api.delete(`/family/members/${memberId}`);
+      toast.success(res.data?.message || 'Member removed');
       loadData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to remove member');
@@ -604,6 +609,9 @@ const SettingsPage = () => {
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-navy">{member.name}</span>
                             {member.role === 'owner' && <Crown className="w-4 h-4 text-amber-500" />}
+                            {!member.last_login && member.role !== 'owner' && (
+                              <Badge variant="outline" className="text-amber-600 border-amber-400 text-xs">Pending</Badge>
+                            )}
                           </div>
                           <div className="flex items-center gap-2">
                             {member.email && <span className="text-sm text-navy-light">{member.email}</span>}
@@ -838,15 +846,10 @@ const SettingsPage = () => {
                     <Button onClick={handleConnectGoogle} data-testid="connect-google-btn">
                       <Calendar className="w-4 h-4 mr-2" /> Connect Google Calendar
                     </Button>
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-sm text-amber-700">
-                        <strong>Note:</strong> Google Calendar requires setup. Add these environment variables to your server:
+                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <p className="text-sm text-amber-700 dark:text-amber-300">
+                        <strong>Setup Required:</strong> Configure Google Calendar API credentials in <strong>Server Settings → Google</strong> tab (Owner only). You'll need a Google Cloud OAuth 2.0 Client ID and Secret.
                       </p>
-                      <ul className="text-xs text-amber-600 mt-2 space-y-1 list-disc list-inside">
-                        <li>GOOGLE_CLIENT_ID</li>
-                        <li>GOOGLE_CLIENT_SECRET</li>
-                        <li>GOOGLE_REDIRECT_URI</li>
-                      </ul>
                     </div>
                   </div>
                 )}

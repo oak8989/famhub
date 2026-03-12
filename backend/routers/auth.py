@@ -48,7 +48,8 @@ async def register(user: UserCreate):
         "family_id": family_id,
         "points": 0,
         "google_tokens": None,
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "last_login": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user_doc)
 
@@ -69,6 +70,7 @@ async def login(credentials: UserLogin):
     if not user or not verify_password(credentials.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    await db.users.update_one({"id": user["id"]}, {"$set": {"last_login": datetime.now(timezone.utc).isoformat()}})
     token = create_token(user["id"], user.get("family_id", ""), user.get("role", "member"))
     response_user = {k: v for k, v in user.items() if k != "password"}
     return {"token": token, "user": response_user}
@@ -88,6 +90,7 @@ async def user_pin_login(data: dict):
     user = await db.users.find_one({"user_pin": data.get("pin")}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=401, detail="Invalid PIN")
+    await db.users.update_one({"id": user["id"]}, {"$set": {"last_login": datetime.now(timezone.utc).isoformat()}})
     token = create_token(user["id"], user.get("family_id", ""), user.get("role", "member"))
     response_user = {k: v for k, v in user.items() if k != "password"}
     return {"token": token, "user": response_user}
