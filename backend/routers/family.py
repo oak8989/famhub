@@ -225,8 +225,8 @@ async def remove_member(member_id: str, user: dict = Depends(get_current_user)):
         await db.users.delete_one({"id": member_id})
         return {"message": "Pending invite removed"}
 
-    # Otherwise soft-remove (clear family association)
-    await db.users.update_one({"id": member_id}, {"$set": {"family_id": None}})
+    # Fully delete the user so they can be re-invited later
+    await db.users.delete_one({"id": member_id})
     return {"message": "Member removed"}
 
 
