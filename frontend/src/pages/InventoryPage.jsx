@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { BrowserMultiFormatReader } from '@zxing/library';
 
 const categories = ['School Supplies', 'Seasonal Decorations', 'Electronics', 'Tools', 'Furniture', 'Cleaning Supplies', 'Outdoor', 'Sports', 'Clothing', 'Books', 'Toys', 'Kitchen', 'Other'];
@@ -266,6 +266,7 @@ const InventoryPage = () => {
         <DialogContent className="max-w-lg" data-testid="inv-dialog">
           <DialogHeader>
             <DialogTitle>{editingItem ? 'Edit Item' : 'Add Item'}</DialogTitle>
+            <DialogDescription>Track household items with details like location, condition, and barcode.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

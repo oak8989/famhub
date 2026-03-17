@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/ui/dialog';
 
 const sections = [
   { key: 'emergency_contacts', label: 'Emergency Contacts', icon: Phone, color: 'text-red-500 bg-red-50' },
@@ -174,6 +174,7 @@ const NOKBoxPage = () => {
         <DialogContent className="max-w-lg" data-testid="nok-dialog">
           <DialogHeader>
             <DialogTitle>{editingEntry ? 'Edit Entry' : 'Add Entry'}</DialogTitle>
+            <DialogDescription>Store critical emergency information for your family.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
