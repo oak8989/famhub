@@ -536,6 +536,19 @@ const SettingsPage = () => {
                         <p className="text-sm text-navy-light text-center">
                           {newMemberResult.name} can use this PIN on the login screen to access Family Hub
                         </p>
+                        {(adminConfig?.server_url || serverForm.server_url) && (
+                          <div className="p-4 bg-blue-50 rounded-xl">
+                            <Label className="text-sm text-navy-light">Site URL</Label>
+                            <div className="flex items-center gap-2 mt-1">
+                              <a href={adminConfig?.server_url || serverForm.server_url} target="_blank" rel="noopener noreferrer" className="font-mono text-sm text-blue-600 hover:underline break-all">
+                                {adminConfig?.server_url || serverForm.server_url}
+                              </a>
+                              <Button variant="ghost" size="icon" onClick={() => copyToClipboard(adminConfig?.server_url || serverForm.server_url)}>
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                         <Button onClick={handleCloseAddMember} className="w-full">Done</Button>
                       </div>
                     ) : (
