@@ -25,7 +25,7 @@ const modules = [
 ];
 
 const Dashboard = () => {
-  const { user, family } = useAuth();
+  const { user, family, isModuleVisible } = useAuth();
   const [stats, setStats] = useState({
     events: 0,
     tasks: 0,
@@ -64,6 +64,19 @@ const Dashboard = () => {
     loadStats();
   }, [user?.points]);
 
+  const moduleKeyMap = {
+    '/calendar': 'calendar', '/shopping': 'shopping', '/tasks': 'tasks',
+    '/notes': 'notes', '/budget': 'budget', '/meals': 'meals',
+    '/recipes': 'recipes', '/grocery': 'grocery', '/contacts': 'contacts',
+    '/pantry': 'pantry', '/suggestions': 'suggestions', '/chores': 'chores',
+  };
+
+  const visibleModules = modules.filter((m) => {
+    const key = moduleKeyMap[m.path];
+    if (!key) return true;
+    return isModuleVisible(key);
+  });
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -93,6 +106,7 @@ const Dashboard = () => {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {isModuleVisible('calendar') && (
         <Link to="/calendar" className="module-card card-hover" data-testid="stat-events">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-terracotta/10 rounded-xl flex items-center justify-center">
@@ -106,7 +120,9 @@ const Dashboard = () => {
             </div>
           </div>
         </Link>
+        )}
 
+        {isModuleVisible('tasks') && (
         <Link to="/tasks" className="module-card card-hover" data-testid="stat-tasks">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-sunny/20 rounded-xl flex items-center justify-center">
@@ -120,7 +136,9 @@ const Dashboard = () => {
             </div>
           </div>
         </Link>
+        )}
 
+        {isModuleVisible('chores') && (
         <Link to="/chores" className="module-card card-hover" data-testid="stat-chores">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -134,7 +152,9 @@ const Dashboard = () => {
             </div>
           </div>
         </Link>
+        )}
 
+        {isModuleVisible('budget') && (
         <Link to="/budget" className="module-card card-hover" data-testid="stat-balance">
           <div className="flex items-center gap-3">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
@@ -152,24 +172,33 @@ const Dashboard = () => {
             </div>
           </div>
         </Link>
+        )}
       </div>
 
       {/* Quick Actions */}
       <div className="card-cozy">
         <h2 className="text-lg font-heading font-bold text-navy mb-4">Quick Actions</h2>
         <div className="flex flex-wrap gap-3">
+          {isModuleVisible('calendar') && (
           <Link to="/calendar" className="btn-outline flex items-center gap-2 text-sm">
             <Calendar className="w-4 h-4" /> Add Event
           </Link>
+          )}
+          {isModuleVisible('tasks') && (
           <Link to="/tasks" className="btn-outline flex items-center gap-2 text-sm">
             <CheckSquare className="w-4 h-4" /> New Task
           </Link>
+          )}
+          {isModuleVisible('shopping') && (
           <Link to="/shopping" className="btn-outline flex items-center gap-2 text-sm">
             <ShoppingCart className="w-4 h-4" /> Shopping List
           </Link>
+          )}
+          {isModuleVisible('chores') && (
           <Link to="/chores" className="btn-outline flex items-center gap-2 text-sm">
             <Award className="w-4 h-4" /> View Chores
           </Link>
+          )}
         </div>
       </div>
 
@@ -177,7 +206,7 @@ const Dashboard = () => {
       <div>
         <h2 className="text-lg font-heading font-bold text-navy mb-4">All Modules</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {modules.map((module) => {
+          {visibleModules.map((module) => {
             const Icon = module.icon;
             return (
               <Link

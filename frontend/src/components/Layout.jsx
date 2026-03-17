@@ -28,11 +28,33 @@ const navItems = [
 ];
 
 const Layout = ({ children }) => {
-  const { user, family, logout } = useAuth();
+  const { user, family, logout, isModuleVisible } = useAuth();
   const { darkMode, toggleDarkMode } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Module key mapping: path segment → settings key
+  const moduleKeyMap = {
+    '/calendar': 'calendar',
+    '/shopping': 'shopping',
+    '/tasks': 'tasks',
+    '/notes': 'notes',
+    '/budget': 'budget',
+    '/meals': 'meals',
+    '/recipes': 'recipes',
+    '/grocery': 'grocery',
+    '/contacts': 'contacts',
+    '/pantry': 'pantry',
+    '/suggestions': 'suggestions',
+    '/chores': 'chores',
+  };
+
+  const visibleNavItems = navItems.filter((item) => {
+    const moduleKey = moduleKeyMap[item.path];
+    if (!moduleKey) return true; // dashboard, settings always visible
+    return isModuleVisible(moduleKey);
+  });
 
   const handleWSMessage = useCallback((msg) => {
     if (msg.type === 'update') {
@@ -60,7 +82,7 @@ const Layout = ({ children }) => {
 
         <nav className="flex-1 overflow-y-auto p-3">
           <ul className="space-y-1">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const isActive = location.pathname === item.path;
               return (
                 <li key={item.path}>
@@ -146,7 +168,7 @@ const Layout = ({ children }) => {
                 {family && <p className="text-sm text-navy-light dark:text-gray-400 font-handwritten">{family.name}</p>}
               </div>
               <ul className="space-y-1">
-                {navItems.map((item) => {
+                {visibleNavItems.map((item) => {
                   const isActive = location.pathname === item.path;
                   return (
                     <li key={item.path}>

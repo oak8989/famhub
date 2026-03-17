@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI, familyAPI } from '../lib/api';
+import { authAPI, familyAPI, settingsAPI } from '../lib/api';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [family, setFamily] = useState(null);
+  const [familySettings, setFamilySettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -23,15 +24,19 @@ export const AuthProvider = ({ children }) => {
 
   const loadUserData = async () => {
     try {
-      const [userRes, familyRes] = await Promise.all([
+      const [userRes, familyRes, settingsRes] = await Promise.all([
         authAPI.getMe(),
         familyAPI.get().catch(() => ({ data: null })),
+        settingsAPI.get().catch(() => ({ data: null })),
       ]);
       if (userRes.data) {
         setUser(userRes.data);
         localStorage.setItem('user', JSON.stringify(userRes.data));
       }
       setFamily(familyRes.data);
+      if (settingsRes.data) {
+        setFamilySettings(settingsRes.data);
+      }
     } catch (error) {
       console.error('Failed to load user data:', error);
     }
@@ -46,6 +51,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loadSettings = async () => {
+    try {
+      const response = await settingsAPI.get();
+      setFamilySettings(response.data);
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+    }
+  };
+
   const login = async (email, password) => {
     const response = await authAPI.login({ email, password });
     const { token, user: userData } = response.data;
@@ -54,6 +68,7 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
     setIsAuthenticated(true);
     await loadFamily();
+    await loadSettings();
     return response.data;
   };
 
@@ -65,6 +80,7 @@ export const AuthProvider = ({ children }) => {
     setUser({ id: 'guest', name: 'Family Member', role: 'child' });
     setFamily(familyData);
     setIsAuthenticated(true);
+    await loadSettings();
     return response.data;
   };
 
@@ -76,6 +92,7 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
     setIsAuthenticated(true);
     await loadFamily();
+    await loadSettings();
     return response.data;
   };
 
@@ -88,6 +105,7 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       setIsAuthenticated(true);
       await loadFamily();
+      await loadSettings();
     }
     return response.data;
   };
@@ -104,6 +122,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     setUser(null);
     setFamily(null);
+    setFamilySettings(null);
     setIsAuthenticated(false);
   };
 
@@ -111,9 +130,20 @@ export const AuthProvider = ({ children }) => {
     await loadUserData();
   };
 
+  const isModuleVisible = (moduleKey) => {
+    if (!user) return false;
+    const role = user.role || 'member';
+    if (role === 'owner') return true; // Owner always sees everything
+    if (!familySettings?.modules?.[moduleKey]) return true; // Default: visible
+    const mod = familySettings.modules[moduleKey];
+    if (!mod.enabled) return false;
+    return mod.visible_to?.includes(role) !== false;
+  };
+
   const value = {
     user,
     family,
+    familySettings,
     loading,
     isAuthenticated,
     login,
@@ -123,7 +153,9 @@ export const AuthProvider = ({ children }) => {
     createFamily,
     logout,
     loadFamily,
+    loadSettings,
     refreshUser,
+    isModuleVisible,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

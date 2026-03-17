@@ -51,7 +51,7 @@ const MODULE_NAMES = {
 };
 
 const SettingsPage = () => {
-  const { user, family, loadFamily, refreshUser } = useAuth();
+  const { user, family, loadFamily, refreshUser, loadSettings } = useAuth();
   const [searchParams] = useSearchParams();
   const [members, setMembers] = useState([]);
   const [settings, setSettings] = useState(null);
@@ -328,6 +328,7 @@ const SettingsPage = () => {
     
     try {
       await api.put('/settings', { modules: newSettings.modules });
+      await loadSettings();
     } catch (error) {
       toast.error('Failed to save settings');
     }

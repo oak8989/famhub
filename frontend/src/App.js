@@ -40,6 +40,14 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+const ModuleRoute = ({ moduleKey, children }) => {
+  const { isModuleVisible } = useAuth();
+  if (moduleKey && !isModuleVisible(moduleKey)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return children;
+};
+
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
 
@@ -48,18 +56,18 @@ const AppRoutes = () => {
       <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <AuthPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-      <Route path="/calendar" element={<ProtectedRoute><Layout><CalendarPage /></Layout></ProtectedRoute>} />
-      <Route path="/shopping" element={<ProtectedRoute><Layout><ShoppingPage /></Layout></ProtectedRoute>} />
-      <Route path="/tasks" element={<ProtectedRoute><Layout><TasksPage /></Layout></ProtectedRoute>} />
-      <Route path="/notes" element={<ProtectedRoute><Layout><NotesPage /></Layout></ProtectedRoute>} />
-      <Route path="/budget" element={<ProtectedRoute><Layout><BudgetPage /></Layout></ProtectedRoute>} />
-      <Route path="/meals" element={<ProtectedRoute><Layout><MealPlannerPage /></Layout></ProtectedRoute>} />
-      <Route path="/recipes" element={<ProtectedRoute><Layout><RecipesPage /></Layout></ProtectedRoute>} />
-      <Route path="/grocery" element={<ProtectedRoute><Layout><GroceryPage /></Layout></ProtectedRoute>} />
-      <Route path="/contacts" element={<ProtectedRoute><Layout><ContactsPage /></Layout></ProtectedRoute>} />
-      <Route path="/pantry" element={<ProtectedRoute><Layout><PantryPage /></Layout></ProtectedRoute>} />
-      <Route path="/suggestions" element={<ProtectedRoute><Layout><SuggestionsPage /></Layout></ProtectedRoute>} />
-      <Route path="/chores" element={<ProtectedRoute><Layout><ChoresPage /></Layout></ProtectedRoute>} />
+      <Route path="/calendar" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="calendar"><CalendarPage /></ModuleRoute></Layout></ProtectedRoute>} />
+      <Route path="/shopping" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="shopping"><ShoppingPage /></ModuleRoute></Layout></ProtectedRoute>} />
+      <Route path="/tasks" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="tasks"><TasksPage /></ModuleRoute></Layout></ProtectedRoute>} />
+      <Route path="/notes" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="notes"><NotesPage /></ModuleRoute></Layout></ProtectedRoute>} />
+      <Route path="/budget" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="budget"><BudgetPage /></ModuleRoute></Layout></ProtectedRoute>} />
+      <Route path="/meals" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="meals"><MealPlannerPage /></ModuleRoute></Layout></ProtectedRoute>} />
+      <Route path="/recipes" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="recipes"><RecipesPage /></ModuleRoute></Layout></ProtectedRoute>} />
+      <Route path="/grocery" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="grocery"><GroceryPage /></ModuleRoute></Layout></ProtectedRoute>} />
+      <Route path="/contacts" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="contacts"><ContactsPage /></ModuleRoute></Layout></ProtectedRoute>} />
+      <Route path="/pantry" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="pantry"><PantryPage /></ModuleRoute></Layout></ProtectedRoute>} />
+      <Route path="/suggestions" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="suggestions"><SuggestionsPage /></ModuleRoute></Layout></ProtectedRoute>} />
+      <Route path="/chores" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="chores"><ChoresPage /></ModuleRoute></Layout></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Layout><SettingsPage /></Layout></ProtectedRoute>} />
     </Routes>
   );

@@ -21,37 +21,26 @@ Build a full-stack, self-hostable application for families called "Family Hub" w
 - Dark Mode, PWA offline support, push notifications
 - Data export/import, QR code setup
 - Email invites with pending invite management
-- Password change, owner reset, and **forgot password with email reset link**
-- **Server URL configuration** in admin panel
-- **Security hardening**: JWT expiration, rate limiting, dynamic config, no stale secrets
+- Password change, owner reset, forgot password with email reset link
+- Server URL configuration in admin panel
+- Security: JWT expiration, rate limiting, dynamic config
+- **Module Visibility Enforcement**: Sidebar, dashboard, and routes filter modules based on role+visibility settings
 
-## Completed Features (Latest Session - March 2026)
-### Batch 1: UI/UX Enhancements
-- Quantity Placeholder "0": Shopping, Grocery, Pantry quantity inputs show placeholder "0"
-- Bulk Pantry Scanning: Full-screen bulk scanning mode with continuous barcode scanning and batch save
-
-### Batch 2: Security & Cleanup
-- **Server URL Setting**: New field in Settings > Server to set public-facing URL (used in emails)
-- **Forgot Password**: Full flow — link on login page, email with reset link (itsdangerous token), /reset-password page
-- **Removed Self-Hosted Server**: Cleaned login page — removed custom server config, setCustomServer, getCustomServer, testServerConnection
-- **Bloat Removal**: Removed stale module-level vars (SMTP_*, GOOGLE_*) from auth.py, removed /app/backend_test.py, /app/test_result.md, /app/tests/, made suggestions.py use dynamic env lookups
-- **Security Hardening**: JWT 72h expiration, rate limiting (10/5min on login/register/forgot-password), random JWT_SECRET fallback, itsdangerous for reset tokens, email enumeration prevention
+## Latest Changes (March 2026)
+- **Module Visibility Bug Fix**: Settings module visibility (visible_to per role) was not enforced. Now:
+  - AuthContext loads `familySettings` and exposes `isModuleVisible(key)`
+  - Layout sidebar filters nav items based on user role + module visibility
+  - Dashboard filters stat cards, quick actions, and module grid tiles
+  - App.js routes redirect hidden modules to /dashboard via `ModuleRoute`
+  - Owner always sees everything; settings changes take effect immediately
 
 ## Key API Endpoints
-- `POST /api/auth/forgot-password` - Request password reset email (NEW)
-- `POST /api/auth/reset-password-token` - Reset password with token (NEW)
-- `POST /api/admin/config/server` - Save server config including server_url (UPDATED)
+- `GET /api/settings` - Get family settings including module visibility
+- `PUT /api/settings` - Update module visibility (owner only)
+- `POST /api/auth/forgot-password`, `POST /api/auth/reset-password-token`
 - `POST /api/pantry/bulk-add` - Bulk add pantry items
-- Full CRUD for: shopping, grocery, pantry, tasks, notes, budget, meals, recipes, contacts, calendar, chores, rewards
+- Full CRUD for all modules
 - `/api/admin/*` - Server management (Owner only)
-
-## Database Collections
-- users, families, family_settings
-- shopping_items, grocery_items, pantry_items
-- tasks, notes, calendar_events
-- budget_entries, meal_plans, recipes
-- contacts, chores, rewards, reward_claims
-- push_subscriptions
 
 ## Integrations
 - Emergent LLM Key / emergentintegrations (AI Meal Suggestions)
@@ -60,11 +49,11 @@ Build a full-stack, self-hostable application for families called "Family Hub" w
 - pywebpush (push notifications)
 
 ## Critical Notes
-- motor==3.4.0 and pymongo<4.7 pinned in requirements.txt (Docker crash prevention)
-- Backend uses dynamic config pattern for SMTP/Google/OpenAI settings
-- All backend routes prefixed with /api
+- motor==3.4.0 and pymongo<4.7 pinned in requirements.txt
+- Backend uses dynamic config pattern for all env-based settings
 - JWT tokens expire after 72 hours
 - Rate limiting: 10 attempts per 5 minutes on auth endpoints
+- Dockerfile secrets removed from ENV (passed at runtime)
 
 ## Upcoming / Future Tasks
 - P2: Enhanced AI Meal Suggestions (dietary restrictions, recent meals)
