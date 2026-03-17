@@ -986,20 +986,53 @@ const SettingsPage = () => {
                         <h3 className="font-semibold text-navy mb-1">Google Calendar API</h3>
                         <p className="text-sm text-navy-light">Enable Google Calendar sync for family events.</p>
                       </div>
-                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-700 dark:text-blue-300">
-                        <strong>Setup:</strong> Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="underline">Google Cloud Console</a>, create OAuth 2.0 credentials, set redirect URI to <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded text-xs">{'your-domain'}/api/calendar/google/callback</code>
+
+                      {/* Step-by-step guide */}
+                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl text-sm space-y-3">
+                        <p className="font-semibold text-blue-800 dark:text-blue-200">Quick Setup (3 steps):</p>
+                        <ol className="list-decimal list-inside space-y-2 text-blue-700 dark:text-blue-300">
+                          <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="underline font-medium">Google Cloud Console &rarr; Credentials</a></li>
+                          <li>Create an <strong>OAuth 2.0 Client ID</strong> (Web application type)</li>
+                          <li>
+                            Add this as an <strong>Authorized redirect URI</strong>:
+                            <div className="mt-1 flex items-center gap-2">
+                              <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs break-all flex-1">
+                                {serverForm.server_url ? `${serverForm.server_url}/api/calendar/google/callback` : 'Set Server URL first (Server tab)'}
+                              </code>
+                              {serverForm.server_url && (
+                                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => {
+                                  navigator.clipboard.writeText(`${serverForm.server_url}/api/calendar/google/callback`);
+                                  toast.success('Redirect URI copied!');
+                                }}>
+                                  <Copy className="w-3.5 h-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                          </li>
+                        </ol>
+                        {!serverForm.server_url && (
+                          <p className="text-amber-600 dark:text-amber-400 text-xs font-medium">Set your Server URL in the Server tab first so the redirect URI is generated correctly.</p>
+                        )}
                       </div>
+
                       <div className="space-y-1.5">
                         <Label>Google Client ID</Label>
                         <Input placeholder="xxx.apps.googleusercontent.com" value={googleForm.google_client_id} onChange={e => setGoogleForm({...googleForm, google_client_id: e.target.value})} data-testid="admin-google-client-id" />
                       </div>
                       <div className="space-y-1.5">
                         <Label>Google Client Secret</Label>
-                        <Input type="password" value={googleForm.google_client_secret} onChange={e => setGoogleForm({...googleForm, google_client_secret: e.target.value})} data-testid="admin-google-secret" />
+                        <Input type="password" placeholder="Paste from Google Console" value={googleForm.google_client_secret} onChange={e => setGoogleForm({...googleForm, google_client_secret: e.target.value})} data-testid="admin-google-secret" />
                       </div>
                       <div className="space-y-1.5">
                         <Label>Redirect URI</Label>
-                        <Input placeholder="https://your-domain.com/api/calendar/google/callback" value={googleForm.google_redirect_uri} onChange={e => setGoogleForm({...googleForm, google_redirect_uri: e.target.value})} data-testid="admin-google-redirect" />
+                        <div className="flex gap-2">
+                          <Input value={googleForm.google_redirect_uri} onChange={e => setGoogleForm({...googleForm, google_redirect_uri: e.target.value})} placeholder={serverForm.server_url ? `${serverForm.server_url}/api/calendar/google/callback` : 'https://your-domain.com/api/calendar/google/callback'} data-testid="admin-google-redirect" />
+                          {serverForm.server_url && !googleForm.google_redirect_uri && (
+                            <Button variant="outline" size="sm" className="shrink-0" onClick={() => setGoogleForm({...googleForm, google_redirect_uri: `${serverForm.server_url}/api/calendar/google/callback`})} data-testid="admin-google-autofill-redirect">
+                              Auto-fill
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <Button onClick={() => handleAdminSave('google', googleForm)} disabled={adminLoading} data-testid="admin-save-google-btn">
                         <Save className="w-4 h-4 mr-1" /> Save Google Settings
