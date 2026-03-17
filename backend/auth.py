@@ -60,6 +60,8 @@ DEFAULT_FAMILY_SETTINGS = {
         "pantry": {"enabled": True, "visible_to": ["owner", "parent", "member", "child"]},
         "suggestions": {"enabled": True, "visible_to": ["owner", "parent", "member", "child"]},
         "chores": {"enabled": True, "visible_to": ["owner", "parent", "member", "child"]},
+        "nok_box": {"enabled": True, "visible_to": ["owner", "parent"]},
+        "inventory": {"enabled": True, "visible_to": ["owner", "parent", "member", "child"]},
     },
     "permissions": {
         "owner": {"can_add": True, "can_edit": True, "can_delete": True},

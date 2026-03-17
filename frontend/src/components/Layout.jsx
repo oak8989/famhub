@@ -6,7 +6,8 @@ import useWebSocket from '../lib/useWebSocket';
 import {
   Home, CalendarDays, ShoppingCart, CheckSquare, StickyNote,
   DollarSign, UtensilsCrossed, BookOpen, ListOrdered, Contact,
-  Package, Lightbulb, Award, Settings, LogOut, Menu, X, Sun, Moon
+  Package, Lightbulb, Award, Settings, LogOut, Menu, X, Sun, Moon,
+  ShieldAlert, Archive
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -23,6 +24,8 @@ const navItems = [
   { path: '/grocery', icon: ListOrdered, label: 'Grocery' },
   { path: '/contacts', icon: Contact, label: 'Contacts' },
   { path: '/pantry', icon: Package, label: 'Pantry' },
+  { path: '/inventory', icon: Archive, label: 'Inventory' },
+  { path: '/nok-box', icon: ShieldAlert, label: 'Emergency' },
   { path: '/suggestions', icon: Lightbulb, label: 'Ideas' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
@@ -46,6 +49,8 @@ const Layout = ({ children }) => {
     '/grocery': 'grocery',
     '/contacts': 'contacts',
     '/pantry': 'pantry',
+    '/inventory': 'inventory',
+    '/nok-box': 'nok_box',
     '/suggestions': 'suggestions',
     '/chores': 'chores',
   };

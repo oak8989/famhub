@@ -222,4 +222,29 @@ export const importAPI = {
   },
 };
 
+// NOK Box (In Case of Emergency)
+export const nokBoxAPI = {
+  getEntries: () => api.get('/nok-box'),
+  createEntry: (data) => api.post('/nok-box', data),
+  updateEntry: (id, data) => api.put(`/nok-box/${id}`, data),
+  deleteEntry: (id) => api.delete(`/nok-box/${id}`),
+  uploadFile: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/nok-box/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+};
+
+// Household Inventory
+export const inventoryAPI = {
+  getItems: () => api.get('/inventory'),
+  createItem: (data) => api.post('/inventory', data),
+  updateItem: (id, data) => api.put(`/inventory/${id}`, data),
+  deleteItem: (id) => api.delete(`/inventory/${id}`),
+  bulkAdd: (items) => api.post('/inventory/bulk-add', items),
+  lookupBarcode: (barcode) => api.get(`/inventory/barcode/${barcode}`),
+};
+
 export default api;

@@ -198,3 +198,30 @@ class PushSubscription(BaseModel):
 
 class AIMealSuggestionRequest(BaseModel):
     use_ai: bool = True
+
+
+
+class NOKEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    section: str = "custom"  # emergency_contacts, medical, vehicles, documents, custom
+    title: str
+    content: str = ""
+    data: Optional[Dict[str, Any]] = None
+    file_url: Optional[str] = None
+    file_name: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class InventoryItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    barcode: Optional[str] = None
+    category: str = "Other"
+    location: str = "Storage"
+    quantity: int = 1
+    condition: str = "Good"
+    purchase_date: Optional[str] = None
+    notes: Optional[str] = ""
+    image: Optional[str] = None
+    added_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())

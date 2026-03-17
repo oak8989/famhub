@@ -29,6 +29,8 @@ from routers.suggestions import router as suggestions_router
 from routers.utilities import router as utilities_router
 from routers.websocket import router as websocket_router
 from routers.admin import router as admin_router
+from routers.nok_box import router as nok_box_router
+from routers.inventory import router as inventory_router
 
 app.include_router(auth_router)
 app.include_router(family_router)
@@ -48,6 +50,8 @@ app.include_router(suggestions_router)
 app.include_router(utilities_router)
 app.include_router(websocket_router)
 app.include_router(admin_router)
+app.include_router(nok_box_router)
+app.include_router(inventory_router)
 
 
 # Health & root

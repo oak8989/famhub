@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   Calendar, ShoppingCart, CheckSquare, FileText,
   DollarSign, Utensils, BookOpen, List, Users, Package, Lightbulb,
-  ArrowRight, Award, Settings
+  ArrowRight, Award, Settings, ShieldAlert, Archive
 } from 'lucide-react';
 import { calendarAPI, tasksAPI, shoppingAPI, budgetAPI, notesAPI, choresAPI } from '../lib/api';
 
@@ -19,7 +19,9 @@ const modules = [
   { path: '/recipes', icon: BookOpen, label: 'Recipes', color: 'bg-pink-400', desc: 'Recipe box' },
   { path: '/grocery', icon: List, label: 'Grocery', color: 'bg-teal-400', desc: 'Quick list' },
   { path: '/contacts', icon: Users, label: 'Contacts', color: 'bg-indigo-400', desc: 'Address book' },
-  { path: '/pantry', icon: Package, label: 'Pantry', color: 'bg-amber-500', desc: 'Inventory' },
+  { path: '/pantry', icon: Package, label: 'Pantry', color: 'bg-amber-500', desc: 'Pantry tracker' },
+  { path: '/inventory', icon: Archive, label: 'Inventory', color: 'bg-indigo-500', desc: 'Household items' },
+  { path: '/nok-box', icon: ShieldAlert, label: 'Emergency', color: 'bg-red-500', desc: 'Critical info' },
   { path: '/suggestions', icon: Lightbulb, label: 'Ideas', color: 'bg-cyan-500', desc: 'Meal ideas' },
   { path: '/settings', icon: Settings, label: 'Settings', color: 'bg-gray-500', desc: 'Manage family' },
 ];
@@ -68,7 +70,8 @@ const Dashboard = () => {
     '/calendar': 'calendar', '/shopping': 'shopping', '/tasks': 'tasks',
     '/notes': 'notes', '/budget': 'budget', '/meals': 'meals',
     '/recipes': 'recipes', '/grocery': 'grocery', '/contacts': 'contacts',
-    '/pantry': 'pantry', '/suggestions': 'suggestions', '/chores': 'chores',
+    '/pantry': 'pantry', '/inventory': 'inventory', '/nok-box': 'nok_box',
+    '/suggestions': 'suggestions', '/chores': 'chores',
   };
 
   const visibleModules = modules.filter((m) => {

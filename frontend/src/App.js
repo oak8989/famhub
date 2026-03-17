@@ -19,6 +19,8 @@ import SuggestionsPage from './pages/SuggestionsPage';
 import ChoresPage from './pages/ChoresPage';
 import SettingsPage from './pages/SettingsPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import NOKBoxPage from './pages/NOKBoxPage';
+import InventoryPage from './pages/InventoryPage';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -68,6 +70,8 @@ const AppRoutes = () => {
       <Route path="/pantry" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="pantry"><PantryPage /></ModuleRoute></Layout></ProtectedRoute>} />
       <Route path="/suggestions" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="suggestions"><SuggestionsPage /></ModuleRoute></Layout></ProtectedRoute>} />
       <Route path="/chores" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="chores"><ChoresPage /></ModuleRoute></Layout></ProtectedRoute>} />
+      <Route path="/nok-box" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="nok_box"><NOKBoxPage /></ModuleRoute></Layout></ProtectedRoute>} />
+      <Route path="/inventory" element={<ProtectedRoute><Layout><ModuleRoute moduleKey="inventory"><InventoryPage /></ModuleRoute></Layout></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Layout><SettingsPage /></Layout></ProtectedRoute>} />
     </Routes>
   );
