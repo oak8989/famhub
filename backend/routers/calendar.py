@@ -56,8 +56,13 @@ async def delete_event(event_id: str, user: dict = Depends(get_current_user)):
 async def google_calendar_auth(user: dict = Depends(get_current_user)):
     g = get_google_config()
     if not g['client_id'] or not g['client_secret']:
-        raise HTTPException(status_code=400, detail="Google Calendar not configured. Set Google Client ID and Secret in Server settings.")
-    redirect_uri = g['redirect_uri'] or f"{os.environ.get('REACT_APP_BACKEND_URL', '')}/api/calendar/google/callback"
+        raise HTTPException(status_code=400, detail="Google Calendar not configured. Ask the hub owner to set up Google API credentials in Settings > Server > Google.")
+    if g['client_id'] in ('test-client-id', 'test-client-id.apps.googleusercontent.com', ''):
+        raise HTTPException(status_code=400, detail="Google Calendar has placeholder credentials. The hub owner needs to add real Google OAuth credentials in Settings > Server > Google.")
+    server_url = os.environ.get("SERVER_URL", "").rstrip("/")
+    redirect_uri = g['redirect_uri'] or (f"{server_url}/api/calendar/google/callback" if server_url else "")
+    if not redirect_uri:
+        raise HTTPException(status_code=400, detail="Server URL is not configured. The hub owner must set the Server URL in Settings > Server before Google Calendar can work.")
     auth_url = (
         f"https://accounts.google.com/o/oauth2/auth?"
         f"client_id={g['client_id']}&"
@@ -74,7 +79,8 @@ async def google_calendar_auth(user: dict = Depends(get_current_user)):
 @router.get("/google/callback")
 async def google_calendar_callback(code: str, state: str):
     g = get_google_config()
-    redirect_uri = g['redirect_uri'] or f"{os.environ.get('REACT_APP_BACKEND_URL', '')}/api/calendar/google/callback"
+    server_url = os.environ.get("SERVER_URL", "").rstrip("/")
+    redirect_uri = g['redirect_uri'] or (f"{server_url}/api/calendar/google/callback" if server_url else "")
     token_resp = requests.post('https://oauth2.googleapis.com/token', data={
         'code': code,
         'client_id': g['client_id'],
