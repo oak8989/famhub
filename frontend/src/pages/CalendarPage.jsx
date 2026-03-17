@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Calendar as CalendarIcon, Plus, X, Clock, Edit2, Trash2, RefreshCw, Link2, Unlink } from 'lucide-react';
 import { calendarAPI } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -19,6 +20,7 @@ const eventColors = [
 
 const CalendarPage = () => {
   const { user, refreshUser } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [events, setEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
@@ -31,6 +33,16 @@ const CalendarPage = () => {
 
   useEffect(() => {
     loadEvents();
+    // Handle Google OAuth callback redirect
+    if (searchParams.get('google_connected') === 'true') {
+      toast.success('Google Calendar connected!');
+      refreshUser();
+      setSearchParams({}, { replace: true });
+    } else if (searchParams.get('error') === 'google_auth_failed') {
+      toast.error('Google Calendar connection failed. Please try again.');
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadEvents = async () => {
@@ -111,7 +123,7 @@ const CalendarPage = () => {
       toast.success(res.data.message || 'Calendar synced!');
       loadEvents();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Sync failed');
+      toast.error(error.response?.data?.detail || 'Sync failed. Try reconnecting Google Calendar.');
     }
     setSyncing(false);
   };

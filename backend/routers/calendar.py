@@ -83,9 +83,9 @@ async def google_calendar_callback(code: str, state: str):
         'grant_type': 'authorization_code'
     }).json()
     if 'error' in token_resp:
-        return RedirectResponse("/settings?error=google_auth_failed")
+        return RedirectResponse("/calendar?error=google_auth_failed")
     await db.users.update_one({"id": state}, {"$set": {"google_tokens": token_resp}})
-    return RedirectResponse("/settings?google_connected=true")
+    return RedirectResponse("/calendar?google_connected=true")
 
 
 @router.post("/google/sync")
@@ -109,8 +109,12 @@ async def sync_google_calendar(user: dict = Depends(get_current_user)):
             {"$set": {"google_tokens.access_token": creds.token}}
         )
     service = build('calendar', 'v3', credentials=creds)
+
+    pushed = 0
+    imported = 0
+
+    # Push local events to Google
     local_events = await db.calendar_events.find({"family_id": user["family_id"]}, {"_id": 0}).to_list(1000)
-    synced = 0
     for event in local_events:
         if event.get("google_event_id"):
             continue
@@ -129,10 +133,52 @@ async def sync_google_calendar(user: dict = Depends(get_current_user)):
                 {"id": event["id"]},
                 {"$set": {"google_event_id": google_event['id']}}
             )
-            synced += 1
+            pushed += 1
         except Exception as e:
-            logger.error(f"Failed to sync event: {e}")
-    return {"synced": synced}
+            logger.error(f"Failed to push event: {e}")
+
+    # Import events from Google
+    try:
+        from datetime import datetime, timezone, timedelta
+        import uuid
+        now = datetime.now(timezone.utc)
+        time_min = now.isoformat()
+        time_max = (now + timedelta(days=90)).isoformat()
+        google_events = service.events().list(
+            calendarId='primary',
+            timeMin=time_min,
+            timeMax=time_max,
+            maxResults=100,
+            singleEvents=True,
+            orderBy='startTime'
+        ).execute().get('items', [])
+
+        existing_google_ids = {e.get("google_event_id") for e in local_events if e.get("google_event_id")}
+        for ge in google_events:
+            if ge['id'] in existing_google_ids:
+                continue
+            start = ge.get('start', {})
+            date_str = start.get('date') or (start.get('dateTime', '')[:10])
+            time_str = start.get('dateTime', '')[11:16] if start.get('dateTime') else ''
+            if not date_str:
+                continue
+            new_event = {
+                "id": str(uuid.uuid4()),
+                "title": ge.get('summary', 'Google Event'),
+                "description": ge.get('description', ''),
+                "date": date_str,
+                "time": time_str,
+                "color": "#4285F4",
+                "family_id": user["family_id"],
+                "created_by": user["user_id"],
+                "google_event_id": ge['id'],
+            }
+            await db.calendar_events.insert_one(new_event)
+            imported += 1
+    except Exception as e:
+        logger.error(f"Failed to import Google events: {e}")
+
+    return {"message": f"Synced! {pushed} pushed to Google, {imported} imported from Google.", "pushed": pushed, "imported": imported}
 
 
 @router.delete("/google/disconnect")
