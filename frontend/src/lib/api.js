@@ -46,6 +46,7 @@ export const authAPI = {
   resetPassword: (userId) => api.post('/auth/reset-password', { user_id: userId }),
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
   resetPasswordToken: (token, newPassword) => api.post('/auth/reset-password-token', { token, new_password: newPassword }),
+  updateHiddenModules: (hiddenModules) => api.put('/auth/hidden-modules', { hidden_modules: hiddenModules }),
 };
 
 // Family

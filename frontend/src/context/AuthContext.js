@@ -133,11 +133,17 @@ export const AuthProvider = ({ children }) => {
   const isModuleVisible = (moduleKey) => {
     if (!user) return false;
     const role = user.role || 'member';
-    if (role === 'owner') return true; // Owner always sees everything
-    if (!familySettings?.modules?.[moduleKey]) return true; // Default: visible
-    const mod = familySettings.modules[moduleKey];
-    if (!mod.enabled) return false;
-    return mod.visible_to?.includes(role) !== false;
+    // Check family-level settings (owner always sees all)
+    if (role !== 'owner') {
+      if (familySettings?.modules?.[moduleKey]) {
+        const mod = familySettings.modules[moduleKey];
+        if (!mod.enabled) return false;
+        if (mod.visible_to && !mod.visible_to.includes(role)) return false;
+      }
+    }
+    // Check personal hidden modules
+    if (user.hidden_modules?.includes(moduleKey)) return false;
+    return true;
   };
 
   const value = {

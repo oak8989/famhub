@@ -21,6 +21,12 @@ import {
 } from 'lucide-react';
 import api, { qrCodeAPI, notificationsAPI, exportAPI, importAPI, adminAPI, authAPI } from '../lib/api';
 
+const ALL_MODULE_KEYS = [
+  'calendar', 'shopping', 'tasks', 'notes', 'budget', 'meals',
+  'recipes', 'grocery', 'contacts', 'pantry', 'suggestions',
+  'chores', 'nok_box', 'inventory',
+];
+
 const ROLE_COLORS = {
   owner: 'bg-amber-500',
   parent: 'bg-blue-500',
@@ -48,6 +54,8 @@ const MODULE_NAMES = {
   pantry: 'Pantry',
   suggestions: 'Meal Ideas',
   chores: 'Chores & Rewards',
+  nok_box: 'Emergency (ICE)',
+  inventory: 'Household Inventory',
 };
 
 const SettingsPage = () => {
@@ -60,6 +68,7 @@ const SettingsPage = () => {
   const [showPin, setShowPin] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [newMember, setNewMember] = useState({ name: '', email: '', role: 'member' });
+  const [hiddenModules, setHiddenModules] = useState([]);
   const [newMemberResult, setNewMemberResult] = useState(null);
   const [loading, setLoading] = useState(true);
   
@@ -91,6 +100,7 @@ const SettingsPage = () => {
 
   useEffect(() => {
     loadData();
+    if (user?.hidden_modules) setHiddenModules(user.hidden_modules);
     
     if (searchParams.get('google_connected') === 'true') {
       toast.success('Google Calendar connected successfully!');
@@ -331,6 +341,20 @@ const SettingsPage = () => {
       await loadSettings();
     } catch (error) {
       toast.error('Failed to save settings');
+    }
+  };
+
+  const handlePersonalModuleToggle = async (moduleKey, visible) => {
+    const newHidden = visible
+      ? hiddenModules.filter(k => k !== moduleKey)
+      : [...hiddenModules, moduleKey];
+    setHiddenModules(newHidden);
+    try {
+      await authAPI.updateHiddenModules(newHidden);
+      await refreshUser();
+    } catch {
+      toast.error('Failed to save preference');
+      setHiddenModules(hiddenModules);
     }
   };
 
@@ -781,6 +805,40 @@ const SettingsPage = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Personal Module Visibility */}
+          <Card className="card-base">
+            <CardHeader>
+              <CardTitle className="text-navy flex items-center gap-2">
+                <Eye className="w-5 h-5" /> My Modules
+              </CardTitle>
+              <CardDescription>Choose which modules you want to see. Hidden modules won't appear in your sidebar or dashboard.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {ALL_MODULE_KEYS.map(key => {
+                  const role = user?.role || 'member';
+                  const familyMod = settings?.modules?.[key];
+                  const familyDisabled = familyMod && (!familyMod.enabled || (role !== 'owner' && familyMod.visible_to && !familyMod.visible_to.includes(role)));
+                  const isHidden = hiddenModules.includes(key);
+                  return (
+                    <div key={key} className={`flex items-center justify-between p-3 rounded-xl ${familyDisabled ? 'bg-gray-100 opacity-50' : 'bg-cream'}`} data-testid={`my-module-${key}`}>
+                      <span className="text-sm font-medium text-navy">{MODULE_NAMES[key] || key}</span>
+                      {familyDisabled ? (
+                        <span className="text-xs text-navy-light">Restricted</span>
+                      ) : (
+                        <Switch
+                          checked={!isHidden}
+                          onCheckedChange={(checked) => handlePersonalModuleToggle(key, checked)}
+                          data-testid={`my-module-toggle-${key}`}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Modules Tab */}

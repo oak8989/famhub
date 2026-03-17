@@ -121,6 +121,18 @@ async def get_me(user: dict = Depends(get_current_user)):
     return user_data
 
 
+@router.put("/hidden-modules")
+async def update_hidden_modules(data: dict, user: dict = Depends(get_current_user)):
+    hidden = data.get("hidden_modules", [])
+    if not isinstance(hidden, list):
+        raise HTTPException(status_code=400, detail="hidden_modules must be a list")
+    await db.users.update_one(
+        {"id": user["user_id"]},
+        {"$set": {"hidden_modules": hidden}}
+    )
+    return {"hidden_modules": hidden}
+
+
 @router.post("/change-password")
 async def change_password(data: ChangePassword, user: dict = Depends(get_current_user)):
     if len(data.new_password) < 6:
