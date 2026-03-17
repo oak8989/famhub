@@ -98,7 +98,7 @@ const CalendarPage = () => {
   const handleConnectGoogle = async () => {
     try {
       const res = await calendarAPI.googleAuth();
-      window.location.href = res.data.auth_url;
+      window.location.href = res.data.authorization_url;
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Google Calendar not configured. Ask the hub owner to set it up in Server settings.');
     }
