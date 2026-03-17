@@ -26,15 +26,18 @@ Build a full-stack, self-hostable application for families called "Famhub" (form
 - Password change, owner reset, forgot password with email reset link
 - Server URL configuration in admin panel
 - Security: JWT expiration, rate limiting, dynamic config
-- **Module Visibility Enforcement**: Sidebar, dashboard, and routes filter modules based on role+visibility settings
+- **Module Visibility (Family-level)**: Owner/Parent can enable/disable modules and control which roles see them
+- **Module Visibility (Personal)**: Each user can personally show/hide modules via Settings > Account > My Modules
+- Settings merge: GET /api/settings merges stored settings with DEFAULT_FAMILY_SETTINGS so new modules always appear
 
 ## Key API Endpoints
 - `/api/nok-box/*` - Full CRUD for Emergency Info + file upload/serve
 - `/api/inventory/*` - Full CRUD + bulk-add + barcode lookup
-- `/api/settings` - Module visibility settings
+- `PUT /api/auth/hidden-modules` - Store user's personal hidden module preferences
+- `/api/settings` - Module visibility settings (merged with defaults)
 - `/api/auth/*` - Register, login, forgot/reset password
 - `/api/calendar/google/*` - Per-user Google OAuth & two-way sync
-- Full CRUD for all other modules (shopping, tasks, notes, budget, meals, recipes, grocery, contacts, pantry, chores)
+- Full CRUD for all other modules
 - `/api/admin/*` - Server management (Owner only)
 
 ## Integrations
@@ -52,11 +55,12 @@ Build a full-stack, self-hostable application for families called "Famhub" (form
 - Dockerfile secrets removed from ENV (passed at runtime)
 
 ## Testing Status (March 17, 2026)
-- NOK Box & Inventory: Backend 26/26 (100%), Frontend 25/25 (100%) — iteration_18.json
+- Module visibility (personal + admin): Backend 18/18, Frontend 11/11 — iteration_19.json
+- NOK Box & Inventory CRUD: Backend 26/26, Frontend 25/25 — iteration_18.json
 - All previous features tested in iterations 13-16
 
 ## Upcoming / Future Tasks
 - P2: Enhanced AI Meal Suggestions (dietary restrictions, recent meals)
 - P2: More granular dark mode theme controls
 - P3: Refactor App.css dark mode overrides to Tailwind dark: variants
-- P3: Printable emergency card from NOK Box data
+- P3: Module reordering (drag-and-drop sidebar arrangement)
