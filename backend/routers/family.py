@@ -9,6 +9,7 @@ from database import db
 from datetime import datetime, timezone
 import uuid
 import secrets
+import os
 import logging
 
 logger = logging.getLogger(__name__)
@@ -108,16 +109,20 @@ async def invite_member(invite: UserInvite, user: dict = Depends(get_current_use
     inviter = await db.users.find_one({"id": user["user_id"]}, {"_id": 0, "name": 1})
     inviter_name = inviter.get("name", "A family member") if inviter else "A family member"
 
+    server_url = os.environ.get("SERVER_URL", "").rstrip("/")
     email_html = f"""
-    <h2>Welcome to {family['name']} on Family Hub!</h2>
-    <p>You've been invited by {inviter_name} to join the family.</p>
-    <p><strong>Your login credentials:</strong></p>
-    <ul>
-        <li>Email: {invite.email}</li>
-        <li>Temporary Password: {temp_password}</li>
-        <li>Your PIN: {user_pin}</li>
-    </ul>
-    <p>Please change your password after logging in.</p>
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+        <h2 style="color: #2D3748;">Welcome to {family['name']} on Family Hub!</h2>
+        <p>You've been invited by {inviter_name} to join the family.</p>
+        <p><strong>Your login credentials:</strong></p>
+        <ul>
+            <li>Email: {invite.email}</li>
+            <li>Temporary Password: {temp_password}</li>
+            <li>Your PIN: {user_pin}</li>
+        </ul>
+        {f'<div style="text-align: center; margin: 24px 0;"><a href="{server_url}" style="background-color: #E07A5F; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: bold;">Open Family Hub</a></div><p style="color: #718096; font-size: 14px;">Or go to: {server_url}</p>' if server_url else ''}
+        <p>Please change your password after logging in.</p>
+    </div>
     """
     await send_email(invite.email, f"You're invited to {family['name']} - Family Hub", email_html)
     return {"message": "Invitation sent", "user_id": new_user["id"], "user_pin": user_pin, "temp_password": temp_password}
@@ -167,15 +172,19 @@ async def quick_add_member(member: QuickAddMember, user: dict = Depends(get_curr
             inviter = await db.users.find_one({"id": user["user_id"]}, {"_id": 0, "name": 1})
             inviter_name = inviter.get("name", "A family member") if inviter else "A family member"
 
+            server_url = os.environ.get("SERVER_URL", "").rstrip("/")
             email_html = f"""
-            <h2>Welcome to {family['name']} on Family Hub!</h2>
-            <p>You've been invited by {inviter_name} to join the family.</p>
-            <p><strong>Your login credentials:</strong></p>
-            <ul>
-                <li>Email: {member.email}</li>
-                <li>Temporary Password: {temp_password}</li>
-                <li>Your PIN: {user_pin}</li>
-            </ul>
+            <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+                <h2 style="color: #2D3748;">Welcome to {family['name']} on Family Hub!</h2>
+                <p>You've been invited by {inviter_name} to join the family.</p>
+                <p><strong>Your login credentials:</strong></p>
+                <ul>
+                    <li>Email: {member.email}</li>
+                    <li>Temporary Password: {temp_password}</li>
+                    <li>Your PIN: {user_pin}</li>
+                </ul>
+                {f'<div style="text-align: center; margin: 24px 0;"><a href="{server_url}" style="background-color: #E07A5F; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: bold;">Open Family Hub</a></div><p style="color: #718096; font-size: 14px;">Or go to: {server_url}</p>' if server_url else ''}
+            </div>
             """
             await send_email(member.email, f"You're invited to {family['name']} - Family Hub", email_html)
             result["email_sent"] = True
